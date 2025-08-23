@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -28,6 +27,9 @@ import { EmployeeProfile } from "./employee/EmployeeProfile";
 import { OrgChart } from "./employee/OrgChart";
 import { BulkUploadDialog } from "./employee/BulkUploadDialog";
 import { AIInsightsPanel } from "./employee/AIInsightsPanel";
+import { emailService } from "../services/emailService";
+import { aiAnalysisService } from "../services/aiAnalysisService";
+import { toast } from "@/hooks/use-toast";
 
 export const EmployeeManagement = () => {
   const [searchTerm, setSearchTerm] = useState("");
@@ -124,14 +126,65 @@ export const EmployeeManagement = () => {
     setActiveView("profile");
   };
 
-  const handleSendWelcomeEmail = (employeeId) => {
-    console.log(`Sending welcome email to employee ${employeeId}`);
-    // Implementation for sending welcome email
+  const handleSendWelcomeEmail = async (employee) => {
+    const welcomeData = {
+      employeeName: employee.name,
+      employeeEmail: employee.email,
+      position: employee.position,
+      department: employee.department,
+      startDate: employee.joinDate,
+      manager: employee.manager,
+      companyName: "Your Company"
+    };
+
+    await emailService.sendWelcomeEmail(welcomeData);
   };
 
-  const handleBulkWelcomeEmails = () => {
-    console.log("Sending bulk welcome emails");
-    // Implementation for bulk welcome emails
+  const handleBulkWelcomeEmails = async () => {
+    const activeEmployees = employees.filter(emp => emp.status === "Active");
+    const welcomeDataList = activeEmployees.map(employee => ({
+      employeeName: employee.name,
+      employeeEmail: employee.email,
+      position: employee.position,
+      department: employee.department,
+      startDate: employee.joinDate,
+      manager: employee.manager,
+      companyName: "Your Company"
+    }));
+
+    await emailService.sendBulkWelcomeEmails(welcomeDataList);
+  };
+
+  const handleAIProfileAnalysis = async (employee) => {
+    try {
+      const analysis = await aiAnalysisService.analyzeEmployeeProfile(employee);
+      console.log('AI Analysis Result:', analysis);
+      
+      // You could open a modal or navigate to a detailed analysis view here
+      toast({
+        title: "AI Analysis Complete",
+        description: `Profile analysis generated for ${employee.name}. Overall score: ${analysis.overallScore}%`,
+      });
+    } catch (error) {
+      console.error('AI Analysis failed:', error);
+    }
+  };
+
+  const handleBulkAIAnalysis = async () => {
+    try {
+      const analyses = await aiAnalysisService.analyzeMulitpleProfiles(employees);
+      console.log('Bulk AI Analysis Results:', analyses);
+      
+      // You could show a summary or detailed results view here
+      const avgScore = analyses.reduce((sum, analysis) => sum + analysis.overallScore, 0) / analyses.length;
+      
+      toast({
+        title: "Bulk AI Analysis Complete",
+        description: `Analyzed ${analyses.length} profiles. Average score: ${Math.round(avgScore)}%`,
+      });
+    } catch (error) {
+      console.error('Bulk AI Analysis failed:', error);
+    }
   };
 
   const handleExportData = () => {
@@ -171,6 +224,7 @@ export const EmployeeManagement = () => {
             onEdit={handleEditEmployee}
             onView={handleViewProfile}
             onSendEmail={handleSendWelcomeEmail}
+            onAIAnalysis={handleAIProfileAnalysis}
           />
         );
     }
@@ -351,6 +405,7 @@ export const EmployeeManagement = () => {
             </Button>
             <Button 
               variant="outline"
+              onClick={handleBulkAIAnalysis}
               className="h-16 flex-col space-y-2 border-purple-200 hover:bg-purple-50"
             >
               <Brain className="w-6 h-6 text-purple-600" />

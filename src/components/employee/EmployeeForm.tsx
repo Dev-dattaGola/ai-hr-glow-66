@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -6,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { ArrowLeft, Save, User, Mail, Phone, MapPin, Briefcase, Calendar, DollarSign } from "lucide-react";
+import { DocumentUpload } from "./DocumentUpload";
 
 interface Employee {
   id?: number;
@@ -20,6 +20,7 @@ interface Employee {
   address?: string;
   salary?: string;
   manager?: string;
+  documents?: any[];
 }
 
 interface EmployeeFormProps {
@@ -42,9 +43,11 @@ export const EmployeeForm = ({ employee, onClose, onSave }: EmployeeFormProps) =
     manager: employee?.manager || "",
   });
 
+  const [documents, setDocuments] = useState([]);
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    onSave(formData);
+    onSave({ ...formData, documents });
   };
 
   const handleInputChange = (field: keyof Employee, value: string) => {
@@ -52,7 +55,7 @@ export const EmployeeForm = ({ employee, onClose, onSave }: EmployeeFormProps) =
   };
 
   return (
-    <div className="max-w-4xl mx-auto p-6 bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 min-h-screen">
+    <div className="max-w-6xl mx-auto p-6 bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 min-h-screen">
       <div className="mb-6">
         <Button 
           variant="outline" 
@@ -73,12 +76,13 @@ export const EmployeeForm = ({ employee, onClose, onSave }: EmployeeFormProps) =
         </p>
       </div>
 
-      <Card className="shadow-lg border-0">
-        <CardHeader className="bg-gradient-to-r from-blue-50 to-indigo-50">
-          <CardTitle>Employee Information</CardTitle>
-        </CardHeader>
-        <CardContent className="p-8">
-          <form onSubmit={handleSubmit} className="space-y-6">
+      <form onSubmit={handleSubmit} className="space-y-6">
+        {/* Basic and Work Information Cards */}
+        <Card className="shadow-lg border-0">
+          <CardHeader className="bg-gradient-to-r from-blue-50 to-indigo-50">
+            <CardTitle>Employee Information</CardTitle>
+          </CardHeader>
+          <CardContent className="p-8">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {/* Basic Information */}
               <div className="space-y-4">
@@ -223,9 +227,19 @@ export const EmployeeForm = ({ employee, onClose, onSave }: EmployeeFormProps) =
                 </div>
               </div>
             </div>
+          </CardContent>
+        </Card>
 
-            {/* Action Buttons */}
-            <div className="flex justify-end space-x-4 pt-6 border-t">
+        {/* Document Upload Section */}
+        <DocumentUpload 
+          employeeId={employee?.id}
+          onDocumentsChange={setDocuments}
+        />
+
+        {/* Action Buttons */}
+        <Card className="shadow-lg border-0">
+          <CardContent className="p-6">
+            <div className="flex justify-end space-x-4">
               <Button type="button" variant="outline" onClick={onClose}>
                 Cancel
               </Button>
@@ -237,9 +251,9 @@ export const EmployeeForm = ({ employee, onClose, onSave }: EmployeeFormProps) =
                 {employee ? "Update Employee" : "Add Employee"}
               </Button>
             </div>
-          </form>
-        </CardContent>
-      </Card>
+          </CardContent>
+        </Card>
+      </form>
     </div>
   );
 };
