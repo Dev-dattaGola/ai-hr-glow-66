@@ -23,6 +23,39 @@ export const useAuth = () => {
   return context;
 };
 
+// Helpers to create a fully-typed mock User and Session for master access
+const createMockUser = (): User => {
+  const now = new Date().toISOString();
+  return {
+    id: 'master-user-id',
+    email: 'master@hrsuite.com',
+    app_metadata: { provider: 'email', roles: ['master'] },
+    user_metadata: { first_name: 'Master', last_name: 'Admin' },
+    aud: 'authenticated',
+    created_at: now,
+    confirmed_at: now,
+    last_sign_in_at: now,
+    updated_at: now,
+    identities: [],
+    // Optional fields left undefined if not needed by the app:
+    // phone: undefined,
+    // role: 'authenticated',
+  } as unknown as User; // Ensure compatibility across supabase-js versions
+};
+
+const createMockSession = (mockUser: User): Session => {
+  const nowSec = Math.floor(Date.now() / 1000);
+  return {
+    access_token: 'master-access-token',
+    token_type: 'bearer',
+    expires_in: 3600,
+    expires_at: nowSec + 3600,
+    refresh_token: 'master-refresh-token',
+    user: mockUser,
+    // provider_token and other optional fields can remain undefined
+  } as Session;
+};
+
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
@@ -32,18 +65,10 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     // Check for master login first
     const masterAccess = localStorage.getItem('master_access');
     if (masterAccess === 'true') {
-      // Create a mock user for master access
-      const mockUser = {
-        id: 'master-user-id',
-        email: 'master@hrsuite.com',
-        user_metadata: {
-          first_name: 'Master',
-          last_name: 'Admin'
-        }
-      } as User;
-      
+      const mockUser = createMockUser();
+      const mockSession = createMockSession(mockUser);
       setUser(mockUser);
-      setSession({ user: mockUser } as Session);
+      setSession(mockSession);
       setLoading(false);
       return;
     }
@@ -104,17 +129,10 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   const masterLogin = () => {
     localStorage.setItem('master_access', 'true');
-    const mockUser = {
-      id: 'master-user-id',
-      email: 'master@hrsuite.com',
-      user_metadata: {
-        first_name: 'Master',
-        last_name: 'Admin'
-      }
-    } as User;
-    
+    const mockUser = createMockUser();
+    const mockSession = createMockSession(mockUser);
     setUser(mockUser);
-    setSession({ user: mockUser } as Session);
+    setSession(mockSession);
   };
 
   const value = {
