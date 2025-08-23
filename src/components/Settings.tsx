@@ -169,7 +169,8 @@ const Settings = () => {
             </TabsContent>
 
             <TabsContent value="api-keys" className="mt-0">
-              <ApiKeysManager onSave={handleSave} />
+              {/* Removed onSave as ApiKeysManager does not accept it */}
+              <ApiKeysManager />
             </TabsContent>
 
             {/* FIX: Do not pass onSave to components that don't accept it */}
