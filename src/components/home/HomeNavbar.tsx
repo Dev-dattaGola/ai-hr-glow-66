@@ -1,5 +1,5 @@
 
-import { Bell, Settings, LogOut, Sparkles } from 'lucide-react';
+import { Bell, Settings, LogOut, Sparkles, LayoutDashboard } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -36,6 +36,10 @@ export const HomeNavbar = ({ profile, onSignOut }: HomeNavbarProps) => {
     navigate('/auth');
   };
 
+  const handleDashboard = () => {
+    navigate('/dashboard');
+  };
+
   return (
     <header className="bg-white/80 backdrop-blur-sm border-b border-gray-200 sticky top-0 z-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -51,6 +55,10 @@ export const HomeNavbar = ({ profile, onSignOut }: HomeNavbarProps) => {
           </div>
           
           <div className="flex items-center space-x-4">
+            <Button variant="ghost" size="sm" onClick={handleDashboard}>
+              <LayoutDashboard className="w-4 h-4 mr-2" />
+              Dashboard
+            </Button>
             <Button variant="ghost" size="sm" onClick={handleNotifications}>
               <Bell className="w-4 h-4" />
             </Button>

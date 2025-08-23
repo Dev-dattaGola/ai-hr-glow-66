@@ -26,7 +26,7 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   return user ? <>{children}</> : <Navigate to="/auth" replace />;
 };
 
-const PublicRoute = ({ children }: { children: React.ReactNode }) => {
+const AuthRoute = ({ children }: { children: React.ReactNode }) => {
   const { user, loading } = useAuth();
   
   if (loading) {
@@ -37,7 +37,7 @@ const PublicRoute = ({ children }: { children: React.ReactNode }) => {
     );
   }
   
-  // If user is logged in, redirect to dashboard instead of home
+  // If user is logged in, redirect to dashboard
   return user ? <Navigate to="/dashboard" replace /> : <>{children}</>;
 };
 
@@ -45,15 +45,11 @@ const AppRoutes = () => {
   return (
     <Routes>
       <Route path="/auth" element={
-        <PublicRoute>
+        <AuthRoute>
           <Auth />
-        </PublicRoute>
+        </AuthRoute>
       } />
-      <Route path="/home" element={
-        <PublicRoute>
-          <Home />
-        </PublicRoute>
-      } />
+      <Route path="/home" element={<Home />} />
       <Route path="/dashboard" element={
         <ProtectedRoute>
           <Index />
