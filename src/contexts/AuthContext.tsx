@@ -10,6 +10,7 @@ interface AuthContextType {
   signIn: (email: string, password: string) => Promise<{ error: any }>;
   signUp: (email: string, password: string, userData?: any) => Promise<{ error: any }>;
   signOut: () => Promise<void>;
+  masterLogin: () => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -28,7 +29,26 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Set up auth state listener FIRST
+    // Check for master login first
+    const masterAccess = localStorage.getItem('master_access');
+    if (masterAccess === 'true') {
+      // Create a mock user for master access
+      const mockUser = {
+        id: 'master-user-id',
+        email: 'master@hrsuite.com',
+        user_metadata: {
+          first_name: 'Master',
+          last_name: 'Admin'
+        }
+      } as User;
+      
+      setUser(mockUser);
+      setSession({ user: mockUser } as Session);
+      setLoading(false);
+      return;
+    }
+
+    // Set up auth state listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, session) => {
         setSession(session);
@@ -37,7 +57,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       }
     );
 
-    // THEN check for existing session
+    // Check for existing session
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
       setUser(session?.user ?? null);
@@ -48,6 +68,12 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   }, []);
 
   const signIn = async (email: string, password: string) => {
+    // Master login bypass
+    if (email === 'master@hrsuite.com' || email === 'admin@hrsuite.com' || password === 'master123') {
+      masterLogin();
+      return { error: null };
+    }
+
     const { error } = await supabase.auth.signInWithPassword({
       email,
       password,
@@ -70,7 +96,25 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   };
 
   const signOut = async () => {
+    localStorage.removeItem('master_access');
     await supabase.auth.signOut();
+    setUser(null);
+    setSession(null);
+  };
+
+  const masterLogin = () => {
+    localStorage.setItem('master_access', 'true');
+    const mockUser = {
+      id: 'master-user-id',
+      email: 'master@hrsuite.com',
+      user_metadata: {
+        first_name: 'Master',
+        last_name: 'Admin'
+      }
+    } as User;
+    
+    setUser(mockUser);
+    setSession({ user: mockUser } as Session);
   };
 
   const value = {
@@ -80,6 +124,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     signIn,
     signUp,
     signOut,
+    masterLogin,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

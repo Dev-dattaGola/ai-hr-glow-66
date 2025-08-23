@@ -37,7 +37,8 @@ const PublicRoute = ({ children }: { children: React.ReactNode }) => {
     );
   }
   
-  return user ? <Navigate to="/home" replace /> : <>{children}</>;
+  // If user is logged in, redirect to dashboard instead of home
+  return user ? <Navigate to="/dashboard" replace /> : <>{children}</>;
 };
 
 const AppRoutes = () => {
@@ -49,9 +50,9 @@ const AppRoutes = () => {
         </PublicRoute>
       } />
       <Route path="/home" element={
-        <ProtectedRoute>
+        <PublicRoute>
           <Home />
-        </ProtectedRoute>
+        </PublicRoute>
       } />
       <Route path="/dashboard" element={
         <ProtectedRoute>

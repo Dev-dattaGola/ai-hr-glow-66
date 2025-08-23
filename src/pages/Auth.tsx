@@ -8,13 +8,13 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { toast } from '@/hooks/use-toast';
-import { Eye, EyeOff, Building2, Users, TrendingUp } from 'lucide-react';
+import { Eye, EyeOff, Building2, Users, TrendingUp, Shield } from 'lucide-react';
 
 const Auth = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  const { signIn, signUp } = useAuth();
+  const { signIn, signUp, masterLogin } = useAuth();
   const navigate = useNavigate();
 
   const [signInData, setSignInData] = useState({
@@ -30,6 +30,15 @@ const Auth = () => {
     lastName: '',
     department: '',
   });
+
+  const handleMasterLogin = () => {
+    masterLogin();
+    toast({
+      title: 'Master Access Granted!',
+      description: 'You now have full access to all portal features.',
+    });
+    navigate('/dashboard');
+  };
 
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -49,7 +58,7 @@ const Auth = () => {
           title: 'Welcome Back!',
           description: 'You have successfully signed in.',
         });
-        navigate('/');
+        navigate('/dashboard');
       }
     } catch (error) {
       toast({
@@ -181,6 +190,30 @@ const Auth = () => {
             </CardDescription>
           </CardHeader>
           <CardContent>
+            {/* Master Login Button */}
+            <div className="mb-6">
+              <Button
+                onClick={handleMasterLogin}
+                className="w-full bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white"
+                size="lg"
+              >
+                <Shield className="w-4 h-4 mr-2" />
+                Master Login - Full Portal Access
+              </Button>
+              <p className="text-xs text-gray-500 text-center mt-2">
+                Click for instant access to all portal features
+              </p>
+            </div>
+
+            <div className="relative mb-6">
+              <div className="absolute inset-0 flex items-center">
+                <span className="w-full border-t" />
+              </div>
+              <div className="relative flex justify-center text-xs uppercase">
+                <span className="bg-white px-2 text-gray-500">Or continue with email</span>
+              </div>
+            </div>
+
             <Tabs defaultValue="signin" className="w-full">
               <TabsList className="grid w-full grid-cols-2">
                 <TabsTrigger value="signin">Sign In</TabsTrigger>
@@ -194,7 +227,7 @@ const Auth = () => {
                     <Input
                       id="signin-email"
                       type="email"
-                      placeholder="Enter your email"
+                      placeholder="Enter your email or use master@hrsuite.com"
                       value={signInData.email}
                       onChange={(e) => setSignInData(prev => ({ ...prev, email: e.target.value }))}
                       required
@@ -207,7 +240,7 @@ const Auth = () => {
                       <Input
                         id="signin-password"
                         type={showPassword ? "text" : "password"}
-                        placeholder="Enter your password"
+                        placeholder="Enter password or use master123"
                         value={signInData.password}
                         onChange={(e) => setSignInData(prev => ({ ...prev, password: e.target.value }))}
                         required
