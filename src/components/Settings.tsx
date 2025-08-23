@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -171,6 +172,7 @@ const Settings = () => {
               <ApiKeysManager onSave={handleSave} />
             </TabsContent>
 
+            {/* FIX: Do not pass onSave to components that don't accept it */}
             <TabsContent value="ai-automation" className="mt-0">
               <AIAutomation />
             </TabsContent>
