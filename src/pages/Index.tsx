@@ -1,5 +1,6 @@
 
 import { useState } from "react";
+import { useAuth } from "@/contexts/AuthContext";
 import { Sidebar } from "@/components/Sidebar";
 import { Dashboard } from "@/components/Dashboard";
 import { EmployeeManagement } from "@/components/EmployeeManagement";
@@ -17,9 +18,22 @@ import ComplianceDocuments from "@/components/ComplianceDocuments";
 import HelpdeskChatbot from "@/components/HelpdeskChatbot";
 import Settings from "@/components/Settings";
 import { SidebarProvider } from "@/components/ui/sidebar";
+import { Button } from "@/components/ui/button";
+import { LogOut, Home } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 
 const Index = () => {
   const [activeModule, setActiveModule] = useState("dashboard");
+  const { signOut } = useAuth();
+  const navigate = useNavigate();
+
+  const handleSignOut = async () => {
+    await signOut();
+  };
+
+  const handleGoHome = () => {
+    navigate("/home");
+  };
 
   const renderActiveModule = () => {
     switch (activeModule) {
@@ -62,6 +76,25 @@ const Index = () => {
         <div className="flex w-full min-h-screen">
           <Sidebar activeModule={activeModule} setActiveModule={setActiveModule} />
           <main className="flex-1 overflow-hidden">
+            {/* Header */}
+            <div className="bg-white/80 backdrop-blur-sm border-b border-gray-200 px-6 py-4">
+              <div className="flex items-center justify-between">
+                <h1 className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
+                  HR Management System
+                </h1>
+                <div className="flex items-center space-x-2">
+                  <Button variant="outline" size="sm" onClick={handleGoHome}>
+                    <Home className="w-4 h-4 mr-2" />
+                    Home
+                  </Button>
+                  <Button variant="outline" size="sm" onClick={handleSignOut}>
+                    <LogOut className="w-4 h-4 mr-2" />
+                    Sign Out
+                  </Button>
+                </div>
+              </div>
+            </div>
+            
             <div className="p-6">
               {renderActiveModule()}
             </div>
