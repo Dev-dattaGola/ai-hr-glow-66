@@ -1,5 +1,5 @@
 
-import { Bell, Settings, LogOut, Sparkles, LayoutDashboard } from 'lucide-react';
+import { Bell, Settings, LogOut, Sparkles, LayoutDashboard, User, UserPlus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -18,9 +18,10 @@ interface Profile {
 interface HomeNavbarProps {
   profile: Profile | null;
   onSignOut: () => void;
+  isAuthenticated?: boolean;
 }
 
-export const HomeNavbar = ({ profile, onSignOut }: HomeNavbarProps) => {
+export const HomeNavbar = ({ profile, onSignOut, isAuthenticated = false }: HomeNavbarProps) => {
   const navigate = useNavigate();
 
   const handleNotifications = () => {
@@ -33,11 +34,19 @@ export const HomeNavbar = ({ profile, onSignOut }: HomeNavbarProps) => {
 
   const handleSignOut = () => {
     onSignOut();
-    navigate('/auth');
+    navigate('/');
   };
 
   const handleDashboard = () => {
     navigate('/dashboard');
+  };
+
+  const handleLogin = () => {
+    navigate('/auth');
+  };
+
+  const handleSignup = () => {
+    navigate('/auth');
   };
 
   return (
@@ -57,36 +66,51 @@ export const HomeNavbar = ({ profile, onSignOut }: HomeNavbarProps) => {
           </div>
           
           <div className="flex items-center space-x-4">
-            <Button variant="ghost" size="sm" onClick={handleDashboard}>
-              <LayoutDashboard className="w-4 h-4 mr-2" />
-              Dashboard
-            </Button>
-            <Button variant="ghost" size="sm" onClick={handleNotifications}>
-              <Bell className="w-4 h-4" />
-            </Button>
-            <Button variant="ghost" size="sm" onClick={handleSettings}>
-              <Settings className="w-4 h-4" />
-            </Button>
-            
-            <div className="flex items-center space-x-3">
-              <Avatar className="h-8 w-8">
-                <AvatarImage src={profile?.avatar_url} />
-                <AvatarFallback className="bg-gradient-to-r from-blue-500 to-indigo-500 text-white text-sm">
-                  {profile?.first_name?.[0]}{profile?.last_name?.[0]}
-                </AvatarFallback>
-              </Avatar>
-              <div className="hidden md:block text-sm">
-                <p className="font-medium text-gray-900">
-                  {profile?.first_name} {profile?.last_name}
-                </p>
-                <p className="text-gray-500 text-xs">{profile?.department}</p>
-              </div>
-            </div>
-            
-            <Button variant="outline" size="sm" onClick={handleSignOut}>
-              <LogOut className="w-4 h-4 mr-2" />
-              Sign Out
-            </Button>
+            {isAuthenticated ? (
+              <>
+                <Button variant="ghost" size="sm" onClick={handleDashboard}>
+                  <LayoutDashboard className="w-4 h-4 mr-2" />
+                  Dashboard
+                </Button>
+                <Button variant="ghost" size="sm" onClick={handleNotifications}>
+                  <Bell className="w-4 h-4" />
+                </Button>
+                <Button variant="ghost" size="sm" onClick={handleSettings}>
+                  <Settings className="w-4 h-4" />
+                </Button>
+                
+                <div className="flex items-center space-x-3">
+                  <Avatar className="h-8 w-8">
+                    <AvatarImage src={profile?.avatar_url} />
+                    <AvatarFallback className="bg-gradient-to-r from-blue-500 to-indigo-500 text-white text-sm">
+                      {profile?.first_name?.[0]}{profile?.last_name?.[0]}
+                    </AvatarFallback>
+                  </Avatar>
+                  <div className="hidden md:block text-sm">
+                    <p className="font-medium text-gray-900">
+                      {profile?.first_name} {profile?.last_name}
+                    </p>
+                    <p className="text-gray-500 text-xs">{profile?.department}</p>
+                  </div>
+                </div>
+                
+                <Button variant="outline" size="sm" onClick={handleSignOut}>
+                  <LogOut className="w-4 h-4 mr-2" />
+                  Sign Out
+                </Button>
+              </>
+            ) : (
+              <>
+                <Button variant="ghost" size="sm" onClick={handleLogin}>
+                  <User className="w-4 h-4 mr-2" />
+                  Login
+                </Button>
+                <Button variant="default" size="sm" onClick={handleSignup}>
+                  <UserPlus className="w-4 h-4 mr-2" />
+                  Sign Up
+                </Button>
+              </>
+            )}
           </div>
         </div>
       </div>

@@ -12,10 +12,12 @@ import { WelcomeHeader } from "@/components/home/WelcomeHeader";
 import { StatsGrid } from "@/components/home/StatsGrid";
 import { ChartsSection } from "@/components/home/ChartsSection";
 import { AIInsightsBanner } from "@/components/home/AIInsightsBanner";
+import { useNavigate } from "react-router-dom";
 
 const Home = () => {
   const authContext = useContext(AuthContext);
   const [showWelcomeHeader, setShowWelcomeHeader] = useState(true);
+  const navigate = useNavigate();
 
   if (!authContext) {
     return <div>Loading...</div>;
@@ -24,15 +26,15 @@ const Home = () => {
   const { user, signOut } = authContext;
 
   const handleLogin = () => {
-    console.log("Navigate to login");
+    navigate("/auth");
   };
 
   const handleAccessPortal = () => {
-    console.log("Start free trial / access portal");
+    navigate("/auth");
   };
 
   const handleGetStarted = () => {
-    console.log("Get Started clicked from Pricing");
+    navigate("/auth");
   };
 
   // Create a mock profile object when user is authenticated to ensure navbar shows properly
@@ -48,7 +50,11 @@ const Home = () => {
 
   return (
     <div className="bg-gray-50 min-h-screen">
-      <HomeNavbar profile={mockProfile} onSignOut={signOut} />
+      <HomeNavbar 
+        profile={mockProfile} 
+        onSignOut={signOut} 
+        isAuthenticated={!!user}
+      />
       {user && showWelcomeHeader ? (
         <WelcomeHeader firstName={user?.user_metadata?.first_name} />
       ) : (
