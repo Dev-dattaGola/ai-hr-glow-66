@@ -1,5 +1,4 @@
-
-import { ArrowLeft, Users, Target, Award, Globe, Heart, Lightbulb } from 'lucide-react';
+import { ArrowLeft, Users, Target, Award, Globe, Heart, Lightbulb, Shield } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useNavigate } from 'react-router-dom';
