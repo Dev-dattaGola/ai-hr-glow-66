@@ -35,9 +35,20 @@ const Home = () => {
     console.log("Get Started clicked from Pricing");
   };
 
+  // Create a mock profile object when user is authenticated to ensure navbar shows properly
+  const mockProfile = user ? {
+    id: user.id,
+    first_name: user.user_metadata?.first_name || 'User',
+    last_name: user.user_metadata?.last_name || '',
+    email: user.email || '',
+    department: 'General',
+    role: 'User',
+    avatar_url: user.user_metadata?.avatar_url || ''
+  } : null;
+
   return (
     <div className="bg-gray-50 min-h-screen">
-      <HomeNavbar profile={null} onSignOut={signOut} />
+      <HomeNavbar profile={mockProfile} onSignOut={signOut} />
       {user && showWelcomeHeader ? (
         <WelcomeHeader firstName={user?.user_metadata?.first_name} />
       ) : (
