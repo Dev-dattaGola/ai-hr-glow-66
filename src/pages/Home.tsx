@@ -1,6 +1,5 @@
 
-import { useState } from "react";
-import { useContext } from "react";
+import { useState, useContext } from "react";
 import { AuthContext } from "@/contexts/AuthContext";
 import { HomeNavbar } from "@/components/home/HomeNavbar";
 import { LandingHero } from "@/components/home/LandingHero";
@@ -18,27 +17,38 @@ const Home = () => {
   const authContext = useContext(AuthContext);
   const [showWelcomeHeader, setShowWelcomeHeader] = useState(true);
 
-  // Handle case where context might be undefined
   if (!authContext) {
     return <div>Loading...</div>;
   }
 
-  const { user } = authContext;
+  const { user, signOut } = authContext;
+
+  const handleLogin = () => {
+    console.log("Navigate to login");
+  };
+
+  const handleAccessPortal = () => {
+    console.log("Start free trial / access portal");
+  };
+
+  const handleGetStarted = () => {
+    console.log("Get Started clicked from Pricing");
+  };
 
   return (
     <div className="bg-gray-50 min-h-screen">
-      <HomeNavbar />
+      <HomeNavbar profile={null} onSignOut={signOut} />
       {user && showWelcomeHeader ? (
-        <WelcomeHeader onClose={() => setShowWelcomeHeader(false)} />
+        <WelcomeHeader firstName={user?.user_metadata?.first_name} />
       ) : (
         <>
-          <LandingHero />
+          <LandingHero onLogin={handleLogin} onAccessPortal={handleAccessPortal} />
           <AIInsightsBanner />
           <StatsGrid />
           <AnnouncementsSection />
           <ChartsSection />
           <FeaturesSection />
-          <PricingSection />
+          <PricingSection onGetStarted={handleGetStarted} />
           <TestimonialsSection />
         </>
       )}

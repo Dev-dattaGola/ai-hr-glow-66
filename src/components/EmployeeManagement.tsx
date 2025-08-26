@@ -58,6 +58,23 @@ export const EmployeeManagement = () => {
     missingDocs: [] // Will need to implement document tracking
   }));
 
+  // Helper: convert a real Employee to the UI shape expected by EmployeeProfile
+  const toProfileEmployee = (emp: Employee) => ({
+    id: parseInt(emp.id.slice(-8), 16),
+    name: `${emp.first_name} ${emp.last_name}`,
+    email: emp.email,
+    department: emp.department,
+    position: emp.position,
+    status: emp.status === 'active' ? 'Active' : emp.status === 'on_leave' ? 'On Leave' : 'Inactive',
+    joinDate: emp.hire_date,
+    avatar: emp.avatar_url || "/placeholder.svg",
+    phone: emp.phone || "",
+    address: emp.address || "",
+    salary: emp.salary ? `$${emp.salary.toLocaleString()}` : "$0",
+    manager: "",
+    missingDocs: []
+  });
+
   const departments = ["All", "Engineering", "Marketing", "HR", "Sales", "Finance"];
   
   const filteredEmployees = mockEmployees.filter(emp => {
@@ -83,7 +100,8 @@ export const EmployeeManagement = () => {
   };
 
   const handleViewProfile = (employee: any) => {
-    setSelectedEmployee(employee);
+    // Here, employee comes from EmployeeGrid (real Employee). Store it.
+    setSelectedEmployee(employee as Employee);
     setActiveView("profile");
   };
 
@@ -161,11 +179,15 @@ export const EmployeeManagement = () => {
         );
       case "profile":
         return (
-          <EmployeeProfile 
-            employee={selectedEmployee} 
-            onClose={() => setActiveView("grid")}
-            onEdit={() => setActiveView("form")}
-          />
+          <>
+            {selectedEmployee && (
+              <EmployeeProfile 
+                employee={toProfileEmployee(selectedEmployee)}
+                onClose={() => setActiveView("grid")}
+                onEdit={() => setActiveView("form")}
+              />
+            )}
+          </>
         );
       case "orgchart":
         return (
