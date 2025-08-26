@@ -21,8 +21,8 @@ import {
   Building,
   TrendingUp
 } from "lucide-react";
-import { EmployeeGrid } from "./employee/EmployeeGrid";
-import { EmployeeForm } from "./employee/EmployeeForm";
+import EmployeeGrid from "./employee/EmployeeGrid";
+import EmployeeForm from "./employee/EmployeeForm";
 import { EmployeeProfile } from "./employee/EmployeeProfile";
 import { OrgChart } from "./employee/OrgChart";
 import { BulkUploadDialog } from "./employee/BulkUploadDialog";
