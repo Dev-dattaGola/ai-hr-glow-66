@@ -1,4 +1,3 @@
-
 import { createContext, useContext, useEffect, useState } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
@@ -13,7 +12,8 @@ interface AuthContextType {
   masterLogin: () => void;
 }
 
-const AuthContext = createContext<AuthContextType | undefined>(undefined);
+// Export the AuthContext
+export const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const useAuth = () => {
   const context = useContext(AuthContext);
@@ -37,10 +37,7 @@ const createMockUser = (): User => {
     last_sign_in_at: now,
     updated_at: now,
     identities: [],
-    // Optional fields left undefined if not needed by the app:
-    // phone: undefined,
-    // role: 'authenticated',
-  } as unknown as User; // Ensure compatibility across supabase-js versions
+  } as unknown as User;
 };
 
 const createMockSession = (mockUser: User): Session => {
@@ -52,7 +49,6 @@ const createMockSession = (mockUser: User): Session => {
     expires_at: nowSec + 3600,
     refresh_token: 'master-refresh-token',
     user: mockUser,
-    // provider_token and other optional fields can remain undefined
   } as Session;
 };
 

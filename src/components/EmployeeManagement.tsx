@@ -30,80 +30,37 @@ import { AIInsightsPanel } from "./employee/AIInsightsPanel";
 import { emailService } from "../services/emailService";
 import { aiAnalysisService } from "../services/aiAnalysisService";
 import { toast } from "@/hooks/use-toast";
+import { useEmployees, type Employee } from "@/hooks/useEmployees";
 
 export const EmployeeManagement = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedDepartment, setSelectedDepartment] = useState("All");
   const [activeView, setActiveView] = useState("grid"); // grid, profile, form, orgchart
-  const [selectedEmployee, setSelectedEmployee] = useState(null);
+  const [selectedEmployee, setSelectedEmployee] = useState<Employee | null>(null);
   const [showBulkUpload, setShowBulkUpload] = useState(false);
 
-  const employees = [
-    {
-      id: 1,
-      name: "Sarah Johnson",
-      email: "sarah.johnson@company.com",
-      department: "Marketing",
-      position: "Senior Manager",
-      status: "Active",
-      joinDate: "2022-01-15",
-      avatar: "/placeholder.svg",
-      phone: "+1 (555) 123-4567",
-      address: "123 Main St, NYC",
-      salary: "$85,000",
-      manager: "John Smith",
-      missingDocs: ["Tax Forms", "Emergency Contact"]
-    },
-    {
-      id: 2,
-      name: "Mike Chen",
-      email: "mike.chen@company.com",
-      department: "Engineering",
-      position: "Software Engineer",
-      status: "Active",
-      joinDate: "2023-03-20",
-      avatar: "/placeholder.svg",
-      phone: "+1 (555) 234-5678",
-      address: "456 Oak Ave, SF",
-      salary: "$95,000",
-      manager: "Sarah Johnson",
-      missingDocs: ["Profile Photo"]
-    },
-    {
-      id: 3,
-      name: "Anna Smith",
-      email: "anna.smith@company.com",
-      department: "HR",
-      position: "HR Specialist",
-      status: "On Leave",
-      joinDate: "2021-11-10",
-      avatar: "/placeholder.svg",
-      phone: "+1 (555) 345-6789",
-      address: "789 Pine St, LA",
-      salary: "$70,000",
-      manager: "David Wilson",
-      missingDocs: []
-    },
-    {
-      id: 4,
-      name: "David Wilson",
-      email: "david.wilson@company.com",
-      department: "Sales",
-      position: "Account Executive",
-      status: "Active",
-      joinDate: "2023-07-01",
-      avatar: "/placeholder.svg",
-      phone: "+1 (555) 456-7890",
-      address: "321 Elm Dr, Chicago",
-      salary: "$78,000",
-      manager: "Sarah Johnson",
-      missingDocs: ["Bank Details", "ID Copy"]
-    }
-  ];
+  const { data: employees = [], isLoading } = useEmployees();
+
+  // Convert Supabase employee data to match existing mock structure
+  const mockEmployees = employees.map(emp => ({
+    id: parseInt(emp.id.slice(-8), 16), // Convert UUID to number for backward compatibility
+    name: `${emp.first_name} ${emp.last_name}`,
+    email: emp.email,
+    department: emp.department,
+    position: emp.position,
+    status: emp.status === 'active' ? 'Active' : emp.status === 'on_leave' ? 'On Leave' : 'Inactive',
+    joinDate: emp.hire_date,
+    avatar: emp.avatar_url || "/placeholder.svg",
+    phone: emp.phone || "",
+    address: emp.address || "",
+    salary: emp.salary ? `$${emp.salary.toLocaleString()}` : "$0",
+    manager: "", // Will need to resolve manager name from manager_id
+    missingDocs: [] // Will need to implement document tracking
+  }));
 
   const departments = ["All", "Engineering", "Marketing", "HR", "Sales", "Finance"];
   
-  const filteredEmployees = employees.filter(emp => {
+  const filteredEmployees = mockEmployees.filter(emp => {
     const matchesSearch = emp.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          emp.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          emp.department.toLowerCase().includes(searchTerm.toLowerCase());
@@ -116,17 +73,21 @@ export const EmployeeManagement = () => {
     setActiveView("form");
   };
 
-  const handleEditEmployee = (employee) => {
-    setSelectedEmployee(employee);
+  const handleEditEmployee = (employee: any) => {
+    // Convert mock employee back to Employee type for editing
+    const realEmployee = employees.find(emp => 
+      emp.first_name + ' ' + emp.last_name === employee.name
+    );
+    setSelectedEmployee(realEmployee || null);
     setActiveView("form");
   };
 
-  const handleViewProfile = (employee) => {
+  const handleViewProfile = (employee: any) => {
     setSelectedEmployee(employee);
     setActiveView("profile");
   };
 
-  const handleSendWelcomeEmail = async (employee) => {
+  const handleSendWelcomeEmail = async (employee: any) => {
     const welcomeData = {
       employeeName: employee.name,
       employeeEmail: employee.email,
@@ -141,7 +102,7 @@ export const EmployeeManagement = () => {
   };
 
   const handleBulkWelcomeEmails = async () => {
-    const activeEmployees = employees.filter(emp => emp.status === "Active");
+    const activeEmployees = mockEmployees.filter(emp => emp.status === "Active");
     const welcomeDataList = activeEmployees.map(employee => ({
       employeeName: employee.name,
       employeeEmail: employee.email,
@@ -155,12 +116,11 @@ export const EmployeeManagement = () => {
     await emailService.sendBulkWelcomeEmails(welcomeDataList);
   };
 
-  const handleAIProfileAnalysis = async (employee) => {
+  const handleAIProfileAnalysis = async (employee: any) => {
     try {
       const analysis = await aiAnalysisService.analyzeEmployeeProfile(employee);
       console.log('AI Analysis Result:', analysis);
       
-      // You could open a modal or navigate to a detailed analysis view here
       toast({
         title: "AI Analysis Complete",
         description: `Profile analysis generated for ${employee.name}. Overall score: ${analysis.overallScore}%`,
@@ -172,10 +132,9 @@ export const EmployeeManagement = () => {
 
   const handleBulkAIAnalysis = async () => {
     try {
-      const analyses = await aiAnalysisService.analyzeMulitpleProfiles(employees);
+      const analyses = await aiAnalysisService.analyzeMulitpleProfiles(mockEmployees);
       console.log('Bulk AI Analysis Results:', analyses);
       
-      // You could show a summary or detailed results view here
       const avgScore = analyses.reduce((sum, analysis) => sum + analysis.overallScore, 0) / analyses.length;
       
       toast({
@@ -189,7 +148,6 @@ export const EmployeeManagement = () => {
 
   const handleExportData = () => {
     console.log("Exporting employee data");
-    // Implementation for data export
   };
 
   const renderActiveView = () => {
@@ -199,7 +157,6 @@ export const EmployeeManagement = () => {
           <EmployeeForm 
             employee={selectedEmployee} 
             onClose={() => setActiveView("grid")}
-            onSave={() => setActiveView("grid")}
           />
         );
       case "profile":
@@ -213,18 +170,15 @@ export const EmployeeManagement = () => {
       case "orgchart":
         return (
           <OrgChart 
-            employees={employees}
+            employees={mockEmployees}
             onClose={() => setActiveView("grid")}
           />
         );
       default:
         return (
           <EmployeeGrid 
-            employees={filteredEmployees}
-            onEdit={handleEditEmployee}
-            onView={handleViewProfile}
-            onSendEmail={handleSendWelcomeEmail}
-            onAIAnalysis={handleAIProfileAnalysis}
+            onEmployeeSelect={handleViewProfile}
+            onEmployeeEdit={handleEditEmployee}
           />
         );
     }
@@ -232,6 +186,17 @@ export const EmployeeManagement = () => {
 
   if (activeView === "form" || activeView === "profile" || activeView === "orgchart") {
     return renderActiveView();
+  }
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center">
+          <Users className="w-16 h-16 mx-auto mb-4 text-blue-500 animate-pulse" />
+          <p className="text-lg text-gray-600">Loading employee data...</p>
+        </div>
+      </div>
+    );
   }
 
   return (
@@ -307,9 +272,11 @@ export const EmployeeManagement = () => {
               <div>
                 <p className="text-sm font-medium text-green-600">Active</p>
                 <p className="text-3xl font-bold text-green-900">
-                  {employees.filter(e => e.status === "Active").length}
+                  {employees.filter(e => e.status === "active").length}
                 </p>
-                <p className="text-xs text-green-600">92% of total</p>
+                <p className="text-xs text-green-600">
+                  {Math.round((employees.filter(e => e.status === "active").length / employees.length) * 100)}% of total
+                </p>
               </div>
               <UserPlus className="w-10 h-10 text-green-500" />
             </div>
@@ -322,9 +289,11 @@ export const EmployeeManagement = () => {
               <div>
                 <p className="text-sm font-medium text-orange-600">On Leave</p>
                 <p className="text-3xl font-bold text-orange-900">
-                  {employees.filter(e => e.status === "On Leave").length}
+                  {employees.filter(e => e.status === "on_leave").length}
                 </p>
-                <p className="text-xs text-orange-600">8% of total</p>
+                <p className="text-xs text-orange-600">
+                  {employees.length > 0 ? Math.round((employees.filter(e => e.status === "on_leave").length / employees.length) * 100) : 0}% of total
+                </p>
               </div>
               <Briefcase className="w-10 h-10 text-orange-500" />
             </div>
@@ -336,9 +305,7 @@ export const EmployeeManagement = () => {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-purple-600">Missing Docs</p>
-                <p className="text-3xl font-bold text-purple-900">
-                  {employees.reduce((acc, emp) => acc + emp.missingDocs.length, 0)}
-                </p>
+                <p className="text-3xl font-bold text-purple-900">0</p>
                 <p className="text-xs text-purple-600">Needs attention</p>
               </div>
               <FileText className="w-10 h-10 text-purple-500" />
@@ -348,7 +315,7 @@ export const EmployeeManagement = () => {
       </div>
 
       {/* AI Insights Panel */}
-      <AIInsightsPanel employees={employees} />
+      <AIInsightsPanel employees={mockEmployees} />
 
       {/* Search and Filter */}
       <Card className="shadow-md border-0">
