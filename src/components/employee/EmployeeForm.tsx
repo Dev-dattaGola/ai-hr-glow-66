@@ -1,259 +1,278 @@
-import { useState } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { ArrowLeft, Save, User, Mail, Phone, MapPin, Briefcase, Calendar, DollarSign } from "lucide-react";
-import { DocumentUpload } from "./DocumentUpload";
-
-interface Employee {
-  id?: number;
-  name: string;
-  email: string;
-  department: string;
-  position: string;
-  status: string;
-  joinDate: string;
-  avatar?: string;
-  phone?: string;
-  address?: string;
-  salary?: string;
-  manager?: string;
-  documents?: any[];
-}
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { useCreateEmployee, useUpdateEmployee, type Employee } from "@/hooks/useEmployees";
+import { X } from "lucide-react";
 
 interface EmployeeFormProps {
   employee?: Employee | null;
   onClose: () => void;
-  onSave: (employee: Employee) => void;
 }
 
-export const EmployeeForm = ({ employee, onClose, onSave }: EmployeeFormProps) => {
-  const [formData, setFormData] = useState<Employee>({
-    name: employee?.name || "",
-    email: employee?.email || "",
-    department: employee?.department || "",
-    position: employee?.position || "",
-    status: employee?.status || "Active",
-    joinDate: employee?.joinDate || new Date().toISOString().split('T')[0],
-    phone: employee?.phone || "",
-    address: employee?.address || "",
-    salary: employee?.salary || "",
-    manager: employee?.manager || "",
+const EmployeeForm = ({ employee, onClose }: EmployeeFormProps) => {
+  const [formData, setFormData] = useState({
+    employee_id: '',
+    first_name: '',
+    last_name: '',
+    email: '',
+    phone: '',
+    department: '',
+    position: '',
+    hire_date: '',
+    salary: '',
+    status: 'active' as 'active' | 'inactive' | 'on_leave',
+    address: '',
+    emergency_contact: '',
+    emergency_phone: '',
+    avatar_url: ''
   });
 
-  const [documents, setDocuments] = useState([]);
+  const createEmployee = useCreateEmployee();
+  const updateEmployee = useUpdateEmployee();
+
+  useEffect(() => {
+    if (employee) {
+      setFormData({
+        employee_id: employee.employee_id,
+        first_name: employee.first_name,
+        last_name: employee.last_name,
+        email: employee.email,
+        phone: employee.phone || '',
+        department: employee.department,
+        position: employee.position,
+        hire_date: employee.hire_date,
+        salary: employee.salary?.toString() || '',
+        status: employee.status,
+        address: employee.address || '',
+        emergency_contact: employee.emergency_contact || '',
+        emergency_phone: employee.emergency_phone || '',
+        avatar_url: employee.avatar_url || ''
+      });
+    }
+  }, [employee]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    onSave({ ...formData, documents });
+    
+    const employeeData = {
+      ...formData,
+      salary: formData.salary ? parseFloat(formData.salary) : undefined
+    };
+
+    if (employee) {
+      updateEmployee.mutate({ id: employee.id, ...employeeData }, {
+        onSuccess: () => onClose()
+      });
+    } else {
+      createEmployee.mutate(employeeData, {
+        onSuccess: () => onClose()
+      });
+    }
   };
 
-  const handleInputChange = (field: keyof Employee, value: string) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
+    setFormData(prev => ({
+      ...prev,
+      [e.target.name]: e.target.value
+    }));
   };
 
   return (
-    <div className="max-w-6xl mx-auto p-6 bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 min-h-screen">
-      <div className="mb-6">
-        <Button 
-          variant="outline" 
-          onClick={onClose}
-          className="mb-4 hover:bg-blue-50"
-        >
-          <ArrowLeft className="w-4 h-4 mr-2" />
-          Back to Employee List
-        </Button>
-        <h1 className="text-3xl font-bold text-gray-900 flex items-center space-x-2">
-          <div className="p-2 bg-gradient-to-r from-blue-500 to-indigo-600 rounded-lg">
-            <User className="w-8 h-8 text-white" />
-          </div>
-          <span>{employee ? "Edit Employee" : "Add New Employee"}</span>
-        </h1>
-        <p className="text-gray-600 mt-2">
-          {employee ? "Update employee information" : "Create a new employee profile"}
-        </p>
-      </div>
-
-      <form onSubmit={handleSubmit} className="space-y-6">
-        {/* Basic and Work Information Cards */}
-        <Card className="shadow-lg border-0">
-          <CardHeader className="bg-gradient-to-r from-blue-50 to-indigo-50">
-            <CardTitle>Employee Information</CardTitle>
-          </CardHeader>
-          <CardContent className="p-8">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {/* Basic Information */}
-              <div className="space-y-4">
-                <h3 className="text-lg font-semibold text-gray-900 flex items-center space-x-2">
-                  <User className="w-5 h-5 text-blue-600" />
-                  <span>Basic Information</span>
-                </h3>
-                
-                <div>
-                  <Label htmlFor="name" className="text-sm font-medium text-gray-700">Full Name</Label>
-                  <Input
-                    id="name"
-                    value={formData.name}
-                    onChange={(e) => handleInputChange("name", e.target.value)}
-                    placeholder="Enter full name"
-                    className="mt-1"
-                    required
-                  />
-                </div>
-
-                <div>
-                  <Label htmlFor="email" className="text-sm font-medium text-gray-700">Email Address</Label>
-                  <Input
-                    id="email"
-                    type="email"
-                    value={formData.email}
-                    onChange={(e) => handleInputChange("email", e.target.value)}
-                    placeholder="Enter email address"
-                    className="mt-1"
-                    required
-                  />
-                </div>
-
-                <div>
-                  <Label htmlFor="phone" className="text-sm font-medium text-gray-700">Phone Number</Label>
-                  <Input
-                    id="phone"
-                    value={formData.phone}
-                    onChange={(e) => handleInputChange("phone", e.target.value)}
-                    placeholder="Enter phone number"
-                    className="mt-1"
-                  />
-                </div>
-
-                <div>
-                  <Label htmlFor="address" className="text-sm font-medium text-gray-700">Address</Label>
-                  <Textarea
-                    id="address"
-                    value={formData.address}
-                    onChange={(e) => handleInputChange("address", e.target.value)}
-                    placeholder="Enter full address"
-                    className="mt-1"
-                    rows={3}
-                  />
-                </div>
-              </div>
-
-              {/* Work Information */}
-              <div className="space-y-4">
-                <h3 className="text-lg font-semibold text-gray-900 flex items-center space-x-2">
-                  <Briefcase className="w-5 h-5 text-green-600" />
-                  <span>Work Information</span>
-                </h3>
-
-                <div>
-                  <Label htmlFor="position" className="text-sm font-medium text-gray-700">Position</Label>
-                  <Input
-                    id="position"
-                    value={formData.position}
-                    onChange={(e) => handleInputChange("position", e.target.value)}
-                    placeholder="Enter job position"
-                    className="mt-1"
-                    required
-                  />
-                </div>
-
-                <div>
-                  <Label htmlFor="department" className="text-sm font-medium text-gray-700">Department</Label>
-                  <select
-                    id="department"
-                    value={formData.department}
-                    onChange={(e) => handleInputChange("department", e.target.value)}
-                    className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                    required
-                  >
-                    <option value="">Select Department</option>
-                    <option value="Engineering">Engineering</option>
-                    <option value="Marketing">Marketing</option>
-                    <option value="HR">HR</option>
-                    <option value="Sales">Sales</option>
-                    <option value="Finance">Finance</option>
-                  </select>
-                </div>
-
-                <div>
-                  <Label htmlFor="manager" className="text-sm font-medium text-gray-700">Manager</Label>
-                  <Input
-                    id="manager"
-                    value={formData.manager}
-                    onChange={(e) => handleInputChange("manager", e.target.value)}
-                    placeholder="Enter manager name"
-                    className="mt-1"
-                  />
-                </div>
-
-                <div>
-                  <Label htmlFor="salary" className="text-sm font-medium text-gray-700">Salary</Label>
-                  <Input
-                    id="salary"
-                    value={formData.salary}
-                    onChange={(e) => handleInputChange("salary", e.target.value)}
-                    placeholder="Enter salary (e.g., $75,000)"
-                    className="mt-1"
-                  />
-                </div>
-
-                <div>
-                  <Label htmlFor="joinDate" className="text-sm font-medium text-gray-700">Join Date</Label>
-                  <Input
-                    id="joinDate"
-                    type="date"
-                    value={formData.joinDate}
-                    onChange={(e) => handleInputChange("joinDate", e.target.value)}
-                    className="mt-1"
-                    required
-                  />
-                </div>
-
-                <div>
-                  <Label htmlFor="status" className="text-sm font-medium text-gray-700">Status</Label>
-                  <select
-                    id="status"
-                    value={formData.status}
-                    onChange={(e) => handleInputChange("status", e.target.value)}
-                    className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                    required
-                  >
-                    <option value="Active">Active</option>
-                    <option value="On Leave">On Leave</option>
-                    <option value="Inactive">Inactive</option>
-                  </select>
-                </div>
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+      <Card className="w-full max-w-2xl bg-white shadow-2xl max-h-[90vh] overflow-y-auto">
+        <CardHeader className="flex flex-row items-center justify-between space-y-0">
+          <CardTitle>
+            {employee ? 'Edit Employee' : 'Add New Employee'}
+          </CardTitle>
+          <Button variant="ghost" onClick={onClose}>
+            <X className="w-4 h-4" />
+          </Button>
+        </CardHeader>
+        <CardContent>
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div className="flex items-center space-x-4 mb-6">
+              <Avatar className="w-16 h-16">
+                <AvatarImage src={formData.avatar_url} />
+                <AvatarFallback>
+                  {formData.first_name[0]}{formData.last_name[0]}
+                </AvatarFallback>
+              </Avatar>
+              <div className="flex-1">
+                <Label htmlFor="avatar_url">Profile Picture URL</Label>
+                <Input
+                  id="avatar_url"
+                  name="avatar_url"
+                  value={formData.avatar_url}
+                  onChange={handleChange}
+                  placeholder="https://example.com/avatar.jpg"
+                />
               </div>
             </div>
-          </CardContent>
-        </Card>
 
-        {/* Document Upload Section */}
-        <DocumentUpload 
-          employeeId={employee?.id}
-          onDocumentsChange={setDocuments}
-        />
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="employee_id">Employee ID *</Label>
+                <Input
+                  id="employee_id"
+                  name="employee_id"
+                  value={formData.employee_id}
+                  onChange={handleChange}
+                  required
+                />
+              </div>
+              <div>
+                <Label htmlFor="status">Status</Label>
+                <select
+                  id="status"
+                  name="status"
+                  value={formData.status}
+                  onChange={handleChange}
+                  className="w-full p-2 border rounded-lg"
+                  required
+                >
+                  <option value="active">Active</option>
+                  <option value="inactive">Inactive</option>
+                  <option value="on_leave">On Leave</option>
+                </select>
+              </div>
+              <div>
+                <Label htmlFor="first_name">First Name *</Label>
+                <Input
+                  id="first_name"
+                  name="first_name"
+                  value={formData.first_name}
+                  onChange={handleChange}
+                  required
+                />
+              </div>
+              <div>
+                <Label htmlFor="last_name">Last Name *</Label>
+                <Input
+                  id="last_name"
+                  name="last_name"
+                  value={formData.last_name}
+                  onChange={handleChange}
+                  required
+                />
+              </div>
+              <div>
+                <Label htmlFor="email">Email *</Label>
+                <Input
+                  id="email"
+                  name="email"
+                  type="email"
+                  value={formData.email}
+                  onChange={handleChange}
+                  required
+                />
+              </div>
+              <div>
+                <Label htmlFor="phone">Phone</Label>
+                <Input
+                  id="phone"
+                  name="phone"
+                  value={formData.phone}
+                  onChange={handleChange}
+                />
+              </div>
+              <div>
+                <Label htmlFor="department">Department *</Label>
+                <Input
+                  id="department"
+                  name="department"
+                  value={formData.department}
+                  onChange={handleChange}
+                  required
+                />
+              </div>
+              <div>
+                <Label htmlFor="position">Position *</Label>
+                <Input
+                  id="position"
+                  name="position"
+                  value={formData.position}
+                  onChange={handleChange}
+                  required
+                />
+              </div>
+              <div>
+                <Label htmlFor="hire_date">Hire Date *</Label>
+                <Input
+                  id="hire_date"
+                  name="hire_date"
+                  type="date"
+                  value={formData.hire_date}
+                  onChange={handleChange}
+                  required
+                />
+              </div>
+              <div>
+                <Label htmlFor="salary">Salary</Label>
+                <Input
+                  id="salary"
+                  name="salary"
+                  type="number"
+                  value={formData.salary}
+                  onChange={handleChange}
+                  placeholder="50000"
+                />
+              </div>
+            </div>
 
-        {/* Action Buttons */}
-        <Card className="shadow-lg border-0">
-          <CardContent className="p-6">
-            <div className="flex justify-end space-x-4">
-              <Button type="button" variant="outline" onClick={onClose}>
+            <div>
+              <Label htmlFor="address">Address</Label>
+              <Textarea
+                id="address"
+                name="address"
+                value={formData.address}
+                onChange={handleChange}
+                rows={2}
+              />
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="emergency_contact">Emergency Contact</Label>
+                <Input
+                  id="emergency_contact"
+                  name="emergency_contact"
+                  value={formData.emergency_contact}
+                  onChange={handleChange}
+                />
+              </div>
+              <div>
+                <Label htmlFor="emergency_phone">Emergency Phone</Label>
+                <Input
+                  id="emergency_phone"
+                  name="emergency_phone"
+                  value={formData.emergency_phone}
+                  onChange={handleChange}
+                />
+              </div>
+            </div>
+
+            <div className="flex space-x-3 pt-6">
+              <Button type="button" variant="outline" onClick={onClose} className="flex-1">
                 Cancel
               </Button>
               <Button 
-                type="submit"
-                className="bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700"
+                type="submit" 
+                className="flex-1"
+                disabled={createEmployee.isPending || updateEmployee.isPending}
               >
-                <Save className="w-4 h-4 mr-2" />
-                {employee ? "Update Employee" : "Add Employee"}
+                {employee ? 'Update Employee' : 'Create Employee'}
               </Button>
             </div>
-          </CardContent>
-        </Card>
-      </form>
+          </form>
+        </CardContent>
+      </Card>
     </div>
   );
 };
+
+export default EmployeeForm;
