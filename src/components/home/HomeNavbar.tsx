@@ -1,5 +1,5 @@
 
-import { Bell, Settings, LogOut, Sparkles, LayoutDashboard, User, UserPlus } from 'lucide-react';
+import { Bell, Settings, LogOut, Sparkles, LayoutDashboard, User, UserPlus, Home, Users, DollarSign, MessageSquare, BookOpen } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -49,6 +49,33 @@ export const HomeNavbar = ({ profile, onSignOut, isAuthenticated = false }: Home
     navigate('/auth');
   };
 
+  const scrollToSection = (sectionId: string) => {
+    const element = document.getElementById(sectionId);
+    if (element) {
+      element.scrollIntoView({ behavior: 'smooth' });
+    }
+  };
+
+  const handleHome = () => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const handleAbout = () => {
+    navigate('/about');
+  };
+
+  const handleContact = () => {
+    navigate('/contact');
+  };
+
+  const handleHelp = () => {
+    navigate('/help');
+  };
+
+  const handleBlog = () => {
+    navigate('/blog');
+  };
+
   return (
     <header className="bg-white/80 backdrop-blur-sm border-b border-gray-200 sticky top-0 z-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -57,13 +84,47 @@ export const HomeNavbar = ({ profile, onSignOut, isAuthenticated = false }: Home
             <img 
               src="/lovable-uploads/cdd359c8-6f37-4349-a589-639c51d7f17d.png" 
               alt="HR Suite Logo" 
-              className="h-10 w-auto"
+              className="h-10 w-auto cursor-pointer"
+              onClick={handleHome}
             />
             <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">
               <Sparkles className="w-3 h-3 mr-1" />
               AI-Powered
             </Badge>
           </div>
+
+          {/* Navigation Menu */}
+          <nav className="hidden md:flex items-center space-x-2">
+            <Button variant="ghost" size="sm" onClick={handleHome}>
+              <Home className="w-4 h-4 mr-2" />
+              Home
+            </Button>
+            <Button variant="ghost" size="sm" onClick={() => scrollToSection('features')}>
+              <Users className="w-4 h-4 mr-2" />
+              Features
+            </Button>
+            <Button variant="ghost" size="sm" onClick={() => scrollToSection('pricing')}>
+              <DollarSign className="w-4 h-4 mr-2" />
+              Pricing
+            </Button>
+            <Button variant="ghost" size="sm" onClick={() => scrollToSection('testimonials')}>
+              <MessageSquare className="w-4 h-4 mr-2" />
+              Testimonials
+            </Button>
+            <Button variant="ghost" size="sm" onClick={handleAbout}>
+              About
+            </Button>
+            <Button variant="ghost" size="sm" onClick={handleBlog}>
+              <BookOpen className="w-4 h-4 mr-2" />
+              Blog
+            </Button>
+            <Button variant="ghost" size="sm" onClick={handleContact}>
+              Contact
+            </Button>
+            <Button variant="ghost" size="sm" onClick={handleHelp}>
+              Help
+            </Button>
+          </nav>
           
           <div className="flex items-center space-x-4">
             {isAuthenticated ? (
@@ -86,7 +147,7 @@ export const HomeNavbar = ({ profile, onSignOut, isAuthenticated = false }: Home
                       {profile?.first_name?.[0]}{profile?.last_name?.[0]}
                     </AvatarFallback>
                   </Avatar>
-                  <div className="hidden md:block text-sm">
+                  <div className="hidden lg:block text-sm">
                     <p className="font-medium text-gray-900">
                       {profile?.first_name} {profile?.last_name}
                     </p>
