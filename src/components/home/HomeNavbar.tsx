@@ -1,4 +1,3 @@
-
 import { Bell, Settings, LogOut, Sparkles, LayoutDashboard, User, UserPlus, Home, Users, DollarSign, MessageSquare, BookOpen } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -50,14 +49,30 @@ export const HomeNavbar = ({ profile, onSignOut, isAuthenticated = false }: Home
   };
 
   const scrollToSection = (sectionId: string) => {
-    const element = document.getElementById(sectionId);
-    if (element) {
-      element.scrollIntoView({ behavior: 'smooth' });
+    // If we're not on the home page, navigate to home first
+    if (window.location.pathname !== '/' && window.location.pathname !== '/home') {
+      navigate('/', { replace: true });
+      // Wait for navigation to complete then scroll
+      setTimeout(() => {
+        const element = document.getElementById(sectionId);
+        if (element) {
+          element.scrollIntoView({ behavior: 'smooth' });
+        }
+      }, 100);
+    } else {
+      const element = document.getElementById(sectionId);
+      if (element) {
+        element.scrollIntoView({ behavior: 'smooth' });
+      }
     }
   };
 
   const handleHome = () => {
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    if (window.location.pathname !== '/' && window.location.pathname !== '/home') {
+      navigate('/');
+    } else {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
   };
 
   const handleAbout = () => {

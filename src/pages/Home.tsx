@@ -59,14 +59,22 @@ const Home = () => {
         <WelcomeHeader firstName={user?.user_metadata?.first_name} />
       ) : (
         <>
-          <LandingHero onLogin={handleLogin} onAccessPortal={handleAccessPortal} />
+          <div id="home">
+            <LandingHero onLogin={handleLogin} onAccessPortal={handleAccessPortal} />
+          </div>
           <AIInsightsBanner />
           <StatsGrid />
           <AnnouncementsSection />
           <ChartsSection />
-          <FeaturesSection />
-          <PricingSection onGetStarted={handleGetStarted} />
-          <TestimonialsSection />
+          <div id="features">
+            <FeaturesSection />
+          </div>
+          <div id="pricing">
+            <PricingSection onGetStarted={handleGetStarted} />
+          </div>
+          <div id="testimonials">
+            <TestimonialsSection />
+          </div>
         </>
       )}
       <FooterSection />
