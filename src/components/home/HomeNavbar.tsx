@@ -45,9 +45,11 @@ export const HomeNavbar = ({ profile, onSignOut }: HomeNavbarProps) => {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
           <div className="flex items-center space-x-4">
-            <h1 className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
-              HR Suite
-            </h1>
+            <img 
+              src="/lovable-uploads/cdd359c8-6f37-4349-a589-639c51d7f17d.png" 
+              alt="HR Suite Logo" 
+              className="h-10 w-auto"
+            />
             <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">
               <Sparkles className="w-3 h-3 mr-1" />
               AI-Powered
