@@ -140,6 +140,20 @@ const Home = () => {
     }
   };
 
+  const scrollToFeatures = () => {
+    const featuresSection = document.getElementById('features');
+    if (featuresSection) {
+      featuresSection.scrollIntoView({ behavior: 'smooth' });
+    }
+  };
+
+  const scrollToPricing = () => {
+    const pricingSection = document.getElementById('pricing');
+    if (pricingSection) {
+      pricingSection.scrollIntoView({ behavior: 'smooth' });
+    }
+  };
+
   if (loading && user) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 flex items-center justify-center">
@@ -167,10 +181,10 @@ const Home = () => {
               </div>
               
               <div className="flex items-center space-x-4">
-                <Button variant="ghost" onClick={handleLogin}>
+                <Button variant="ghost" onClick={scrollToFeatures}>
                   Features
                 </Button>
-                <Button variant="ghost" onClick={handleLogin}>
+                <Button variant="ghost" onClick={scrollToPricing}>
                   Pricing
                 </Button>
                 <Button onClick={handleLogin} className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700">
@@ -184,9 +198,13 @@ const Home = () => {
 
         <main>
           <LandingHero onLogin={handleLogin} onAccessPortal={handleAccessPortal} />
-          <FeaturesSection />
+          <div id="features">
+            <FeaturesSection />
+          </div>
           <TestimonialsSection />
-          <PricingSection onGetStarted={handleLogin} />
+          <div id="pricing">
+            <PricingSection onGetStarted={handleLogin} />
+          </div>
           <FooterSection />
         </main>
       </div>

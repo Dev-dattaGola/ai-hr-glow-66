@@ -6,36 +6,31 @@ import {
 
 export const FooterSection = () => {
   const productLinks = [
-    { name: "Employee Management", href: "#", icon: Users },
-    { name: "Attendance Tracking", href: "#", icon: Calendar },
-    { name: "Performance Analytics", href: "#", icon: TrendingUp },
-    { name: "Compliance & Security", href: "#", icon: Shield },
-    { name: "Document Management", href: "#", icon: FileText },
-    { name: "AI Helpdesk", href: "#", icon: MessageSquare }
+    { name: "Employee Management", href: "/features#employee-management", icon: Users },
+    { name: "Attendance Tracking", href: "/features#attendance-tracking", icon: Calendar },
+    { name: "Performance Analytics", href: "/features#performance-analytics", icon: TrendingUp },
+    { name: "Compliance & Security", href: "/features#compliance-security", icon: Shield },
+    { name: "Document Management", href: "/features#document-management", icon: FileText },
+    { name: "AI Helpdesk", href: "/features#ai-helpdesk", icon: MessageSquare }
   ];
 
   const companyLinks = [
-    { name: "About Us", href: "#" },
-    { name: "Careers", href: "#" },
-    { name: "Press", href: "#" },
-    { name: "Partners", href: "#" },
-    { name: "Contact", href: "#" }
+    { name: "About Us", href: "/about" },
+    { name: "Careers", href: "/careers" },
+    { name: "Contact", href: "/contact" }
   ];
 
   const resourceLinks = [
-    { name: "Documentation", href: "#" },
-    { name: "API Reference", href: "#" },
-    { name: "Help Center", href: "#" },
-    { name: "Blog", href: "#" },
-    { name: "Webinars", href: "#" },
-    { name: "Case Studies", href: "#" }
+    { name: "Documentation", href: "/help" },
+    { name: "Help Center", href: "/help" },
+    { name: "Blog", href: "/blog" }
   ];
 
   const legalLinks = [
-    { name: "Privacy Policy", href: "#" },
-    { name: "Terms of Service", href: "#" },
-    { name: "Cookie Policy", href: "#" },
-    { name: "GDPR", href: "#" }
+    { name: "Privacy Policy", href: "/privacy" },
+    { name: "Terms of Service", href: "/terms" },
+    { name: "Cookie Policy", href: "/cookies" },
+    { name: "GDPR", href: "/gdpr" }
   ];
 
   const socialLinks = [
@@ -74,11 +69,11 @@ export const FooterSection = () => {
               </div>
               <div className="flex items-center space-x-3">
                 <Phone className="w-4 h-4 text-blue-400" />
-                <span className="text-gray-400">+1 (555) 123-4567</span>
+                <span className="text-gray-400">+91 8920025752</span>
               </div>
               <div className="flex items-center space-x-3">
                 <MapPin className="w-4 h-4 text-blue-400" />
-                <span className="text-gray-400">San Francisco, CA</span>
+                <span className="text-gray-400">Iconic Building Sector 62, Noida, UP, India</span>
               </div>
             </div>
           </div>
