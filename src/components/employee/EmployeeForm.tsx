@@ -7,6 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useCreateEmployee, useUpdateEmployee, useAvailableUsers, type Employee } from "@/hooks/useEmployees";
+import { EmployeeDocumentUpload } from "./EmployeeDocumentUpload";
 import { X, User, Link } from "lucide-react";
 
 interface EmployeeFormProps {
@@ -30,8 +31,10 @@ const EmployeeForm = ({ employee, onClose }: EmployeeFormProps) => {
     emergency_contact: '',
     emergency_phone: '',
     avatar_url: '',
-    user_id: '' // New field for user assignment
+    user_id: ''
   });
+
+  const [documents, setDocuments] = useState<File[]>([]);
 
   const createEmployee = useCreateEmployee();
   const updateEmployee = useUpdateEmployee();
@@ -68,6 +71,12 @@ const EmployeeForm = ({ employee, onClose }: EmployeeFormProps) => {
       user_id: formData.user_id === 'no_assignment' ? undefined : formData.user_id || undefined
     };
 
+    // TODO: Handle document upload to storage
+    if (documents.length > 0) {
+      console.log('Documents to upload:', documents);
+      // Here you would upload documents to Supabase Storage
+    }
+
     if (employee) {
       updateEmployee.mutate({ id: employee.id, ...employeeData }, {
         onSuccess: () => onClose()
@@ -93,11 +102,15 @@ const EmployeeForm = ({ employee, onClose }: EmployeeFormProps) => {
     }));
   };
 
+  const handleDocumentsChange = (newDocuments: File[]) => {
+    setDocuments(newDocuments);
+  };
+
   const selectedUser = availableUsers.find(user => user.id === formData.user_id);
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-      <Card className="w-full max-w-2xl bg-white shadow-2xl max-h-[90vh] overflow-y-auto">
+      <Card className="w-full max-w-4xl bg-white shadow-2xl max-h-[90vh] overflow-y-auto">
         <CardHeader className="flex flex-row items-center justify-between space-y-0">
           <CardTitle>
             {employee ? 'Edit Employee' : 'Add New Employee'}
@@ -107,7 +120,8 @@ const EmployeeForm = ({ employee, onClose }: EmployeeFormProps) => {
           </Button>
         </CardHeader>
         <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-4">
+          <form onSubmit={handleSubmit} className="space-y-6">
+            {/* Profile Picture Section */}
             <div className="flex items-center space-x-4 mb-6">
               <Avatar className="w-16 h-16">
                 <AvatarImage src={formData.avatar_url} />
@@ -168,6 +182,7 @@ const EmployeeForm = ({ employee, onClose }: EmployeeFormProps) => {
               </div>
             </div>
 
+            {/* Basic Information */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <Label htmlFor="employee_id">Employee ID *</Label>
@@ -278,6 +293,7 @@ const EmployeeForm = ({ employee, onClose }: EmployeeFormProps) => {
               </div>
             </div>
 
+            {/* Address */}
             <div>
               <Label htmlFor="address">Address</Label>
               <Textarea
@@ -289,6 +305,7 @@ const EmployeeForm = ({ employee, onClose }: EmployeeFormProps) => {
               />
             </div>
 
+            {/* Emergency Contact */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <Label htmlFor="emergency_contact">Emergency Contact</Label>
@@ -310,6 +327,12 @@ const EmployeeForm = ({ employee, onClose }: EmployeeFormProps) => {
               </div>
             </div>
 
+            {/* Document Upload Section */}
+            <EmployeeDocumentUpload 
+              onDocumentsChange={handleDocumentsChange}
+            />
+
+            {/* Action Buttons */}
             <div className="flex space-x-3 pt-6">
               <Button type="button" variant="outline" onClick={onClose} className="flex-1">
                 Cancel

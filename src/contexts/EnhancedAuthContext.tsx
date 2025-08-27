@@ -1,243 +1,84 @@
 
-import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
-import { User, Session } from '@supabase/supabase-js';
+import { createContext, useContext, useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { User } from '@supabase/supabase-js';
 import { toast } from 'sonner';
 
-export type UserRole = 'master' | 'admin' | 'hr' | 'employee';
-
-export interface UserPermissions {
-  payroll: { read: boolean; write: boolean; approve: boolean; delete: boolean };
-  leave: { read: boolean; write: boolean; approve: boolean; delete: boolean };
-  attendance: { read: boolean; write: boolean; approve: boolean; delete: boolean };
-  reports: { read: boolean; write: boolean; approve: boolean; delete: boolean };
-  documents: { read: boolean; write: boolean; approve: boolean; delete: boolean };
-  employees: { read: boolean; write: boolean; approve: boolean; delete: boolean };
-  settings: { read: boolean; write: boolean; approve: boolean; delete: boolean };
-  expenses: { read: boolean; write: boolean; approve: boolean; delete: boolean };
-}
-
-export interface EnhancedUser extends User {
-  role?: UserRole;
-  permissions?: UserPermissions;
-  department?: string;
-  employee_id?: string;
-  employee_record?: any;
-}
-
 interface AuthContextType {
-  user: EnhancedUser | null;
-  session: Session | null;
+  user: User | null;
+  profile: any | null;
   loading: boolean;
-  theme: 'light' | 'dark';
-  language: 'en' | 'es' | 'fr';
-  rememberMe: boolean;
-  signIn: (credentials: SignInCredentials) => Promise<{ error: any }>;
-  signUp: (userData: SignUpData) => Promise<{ error: any }>;
-  signInWithOAuth: (provider: 'google' | 'github' | 'linkedin_oidc') => Promise<{ error: any }>;
-  signInWithOTP: (phone: string) => Promise<{ error: any }>;
-  resetPassword: (email: string) => Promise<{ error: any }>;
+  signIn: (email: string, password: string) => Promise<void>;
+  signUp: (email: string, password: string, userData?: any) => Promise<void>;
   signOut: () => Promise<void>;
-  masterLogin: () => void;
-  setTheme: (theme: 'light' | 'dark') => void;
-  setLanguage: (language: 'en' | 'es' | 'fr') => void;
-  setRememberMe: (remember: boolean) => void;
-  hasPermission: (module: keyof UserPermissions, action: keyof UserPermissions[keyof UserPermissions]) => boolean;
-}
-
-interface SignInCredentials {
-  email?: string;
-  employeeId?: string;
-  password: string;
-}
-
-interface SignUpData {
-  email: string;
-  password: string;
-  firstName: string;
-  lastName: string;
-  department: string;
-  employeeId: string;
-  role?: UserRole;
+  resetPassword: (email: string) => Promise<void>;
+  updateProfile: (updates: any) => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-export const useAuth = () => {
-  const context = useContext(AuthContext);
-  if (context === undefined) {
-    throw new Error('useAuth must be used within an AuthProvider');
-  }
-  return context;
-};
-
-const defaultPermissions: Record<UserRole, UserPermissions> = {
-  master: {
-    payroll: { read: true, write: true, approve: true, delete: true },
-    leave: { read: true, write: true, approve: true, delete: true },
-    attendance: { read: true, write: true, approve: true, delete: true },
-    reports: { read: true, write: true, approve: true, delete: true },
-    documents: { read: true, write: true, approve: true, delete: true },
-    employees: { read: true, write: true, approve: true, delete: true },
-    settings: { read: true, write: true, approve: true, delete: true },
-    expenses: { read: true, write: true, approve: true, delete: true },
-  },
+// Demo credentials with updated professional emails and stronger passwords
+const DEMO_CREDENTIALS = {
   admin: {
-    payroll: { read: true, write: true, approve: true, delete: false },
-    leave: { read: true, write: true, approve: true, delete: false },
-    attendance: { read: true, write: true, approve: false, delete: false },
-    reports: { read: true, write: true, approve: false, delete: false },
-    documents: { read: true, write: true, approve: true, delete: false },
-    employees: { read: true, write: true, approve: false, delete: false },
-    settings: { read: true, write: false, approve: false, delete: false },
-    expenses: { read: true, write: true, approve: true, delete: false },
+    email: 'admin@hrcompany.com',
+    password: 'AdminPass123!',
+    role: 'admin',
+    first_name: 'Admin',
+    last_name: 'User',
+    department: 'Administration',
+    position: 'System Administrator'
   },
   hr: {
-    payroll: { read: true, write: false, approve: false, delete: false },
-    leave: { read: true, write: true, approve: true, delete: false },
-    attendance: { read: true, write: true, approve: false, delete: false },
-    reports: { read: true, write: true, approve: false, delete: false },
-    documents: { read: true, write: true, approve: false, delete: false },
-    employees: { read: true, write: true, approve: false, delete: false },
-    settings: { read: false, write: false, approve: false, delete: false },
-    expenses: { read: true, write: true, approve: false, delete: false },
+    email: 'hr.manager@hrcompany.com',
+    password: 'HRManager123!',
+    role: 'hr',
+    first_name: 'Sarah',
+    last_name: 'Johnson',
+    department: 'Human Resources',
+    position: 'HR Manager'
   },
   employee: {
-    payroll: { read: true, write: false, approve: false, delete: false },
-    leave: { read: true, write: true, approve: false, delete: false },
-    attendance: { read: true, write: true, approve: false, delete: false },
-    reports: { read: true, write: false, approve: false, delete: false },
-    documents: { read: true, write: false, approve: false, delete: false },
-    employees: { read: false, write: false, approve: false, delete: false },
-    settings: { read: false, write: false, approve: false, delete: false },
-    expenses: { read: true, write: true, approve: false, delete: false },
+    email: 'john.doe@hrcompany.com',
+    password: 'Employee123!',
+    role: 'employee',
+    first_name: 'John',
+    last_name: 'Doe',
+    department: 'Engineering',
+    position: 'Software Developer'
   },
+  manager: {
+    email: 'david.wilson@hrcompany.com',
+    password: 'Manager123!',
+    role: 'manager',
+    first_name: 'David',
+    last_name: 'Wilson',
+    department: 'Engineering',
+    position: 'Engineering Manager'
+  }
 };
 
-// Updated demo accounts with more realistic credentials
-const demoAccounts = {
-  'master@company.com': { role: 'master', password: 'Master123!' },
-  'admin@company.com': { role: 'admin', password: 'Admin123!' },
-  'hr@company.com': { role: 'hr', password: 'HR123!' },
-  'manager@company.com': { role: 'admin', password: 'Manager123!' },
-  'employee@company.com': { role: 'employee', password: 'Employee123!' },
-  'john.doe@company.com': { role: 'employee', password: 'John123!' },
-  'jane.smith@company.com': { role: 'hr', password: 'Jane123!' },
-  'mike.johnson@company.com': { role: 'admin', password: 'Mike123!' },
-};
-
-const createMockUser = (role: UserRole, email?: string): EnhancedUser => {
-  const now = new Date().toISOString();
-  const userEmail = email || `${role}@company.com`;
-  
-  return {
-    id: `${role}-user-${Date.now()}`,
-    email: userEmail,
-    app_metadata: { provider: 'email', roles: [role] },
-    user_metadata: { 
-      first_name: role.charAt(0).toUpperCase() + role.slice(1), 
-      last_name: 'User',
-      full_name: `${role.charAt(0).toUpperCase() + role.slice(1)} User`
-    },
-    aud: 'authenticated',
-    created_at: now,
-    confirmed_at: now,
-    last_sign_in_at: now,
-    updated_at: now,
-    identities: [],
-    role,
-    permissions: defaultPermissions[role],
-    department: role === 'hr' ? 'Human Resources' : role === 'admin' ? 'Administration' : 'General',
-    employee_id: `${role.toUpperCase()}001`,
-  } as EnhancedUser;
-};
-
-const createMockSession = (mockUser: EnhancedUser): Session => {
-  const nowSec = Math.floor(Date.now() / 1000);
-  return {
-    access_token: `${mockUser.role}-access-token-${Date.now()}`,
-    token_type: 'bearer',
-    expires_in: 3600,
-    expires_at: nowSec + 3600,
-    refresh_token: `${mockUser.role}-refresh-token-${Date.now()}`,
-    user: mockUser,
-  } as Session;
-};
-
-export const EnhancedAuthProvider = ({ children }: { children: ReactNode }) => {
-  const [user, setUser] = useState<EnhancedUser | null>(null);
-  const [session, setSession] = useState<Session | null>(null);
+export const EnhancedAuthProvider = ({ children }: { children: React.ReactNode }) => {
+  const [user, setUser] = useState<User | null>(null);
+  const [profile, setProfile] = useState<any | null>(null);
   const [loading, setLoading] = useState(true);
-  const [theme, setTheme] = useState<'light' | 'dark'>('light');
-  const [language, setLanguage] = useState<'en' | 'es' | 'fr'>('en');
-  const [rememberMe, setRememberMe] = useState(false);
 
   useEffect(() => {
-    // Load preferences from localStorage
-    const savedTheme = localStorage.getItem('hrms_theme') as 'light' | 'dark' | null;
-    const savedLanguage = localStorage.getItem('hrms_language') as 'en' | 'es' | 'fr' | null;
-    const savedRememberMe = localStorage.getItem('hrms_remember_me') === 'true';
-
-    if (savedTheme) setTheme(savedTheme);
-    if (savedLanguage) setLanguage(savedLanguage);
-    setRememberMe(savedRememberMe);
-
-    // Check for existing demo sessions
-    const checkDemoSession = () => {
-      for (const [email, account] of Object.entries(demoAccounts)) {
-        const sessionKey = `demo_session_${account.role}`;
-        if (localStorage.getItem(sessionKey) === 'true') {
-          const mockUser = createMockUser(account.role as UserRole, email);
-          setUser(mockUser);
-          setSession(createMockSession(mockUser));
-          setLoading(false);
-          return true;
-        }
-      }
-      return false;
-    };
-
-    // Check for master login first
-    const masterAccess = localStorage.getItem('master_access');
-    if (masterAccess === 'true') {
-      const mockUser = createMockUser('master');
-      setUser(mockUser);
-      setSession(createMockSession(mockUser));
-      setLoading(false);
-      return;
-    }
-
-    // Check for demo sessions
-    if (checkDemoSession()) {
-      return;
-    }
-
-    // Set up auth state listener
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
-        console.log('Auth state changed:', event, session);
-        setSession(session);
-        
-        if (session?.user) {
-          const enhancedUser = await enhanceUserWithRole(session.user);
-          setUser(enhancedUser);
-        } else {
-          setUser(null);
-        }
-        setLoading(false);
-      }
-    );
-
-    // Check for existing session
-    supabase.auth.getSession().then(async ({ data: { session } }) => {
-      console.log('Initial session check:', session);
-      setSession(session);
-      
+    // Get initial session
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setUser(session?.user ?? null);
       if (session?.user) {
-        const enhancedUser = await enhanceUserWithRole(session.user);
-        setUser(enhancedUser);
+        fetchProfile(session.user.id);
+      }
+      setLoading(false);
+    });
+
+    // Listen for auth changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      setUser(session?.user ?? null);
+      if (session?.user) {
+        await fetchProfile(session.user.id);
       } else {
-        setUser(null);
+        setProfile(null);
       }
       setLoading(false);
     });
@@ -245,258 +86,144 @@ export const EnhancedAuthProvider = ({ children }: { children: ReactNode }) => {
     return () => subscription.unsubscribe();
   }, []);
 
-  const enhanceUserWithRole = async (baseUser: User): Promise<EnhancedUser> => {
+  const fetchProfile = async (userId: string) => {
     try {
-      // Try to fetch from profiles table
-      const { data: profile, error } = await supabase
+      const { data, error } = await supabase
         .from('profiles')
         .select('*')
-        .eq('id', baseUser.id)
+        .eq('id', userId)
         .single();
 
-      let employeeRecord = null;
-      
-      // Try to fetch linked employee record
-      if (!error && profile) {
-        const { data: employee } = await supabase
-          .from('employees')
-          .select('*')
-          .eq('user_id', baseUser.id)
-          .single();
-        
-        employeeRecord = employee;
+      if (error && error.code !== 'PGRST116') {
+        console.error('Error fetching profile:', error);
+        return;
       }
 
-      if (error) {
-        console.log('Profile fetch error (this is normal for demo):', error);
-        const role = 'employee' as UserRole;
-        const permissions = defaultPermissions[role];
-
-        return {
-          ...baseUser,
-          role,
-          permissions,
-          department: 'General',
-          employee_id: `EMP${Math.floor(Math.random() * 1000).toString().padStart(3, '0')}`,
-          employee_record: employeeRecord,
-        };
-      }
-
-      const role = (profile?.role as UserRole) || 'employee';
-      const permissions = defaultPermissions[role];
-
-      return {
-        ...baseUser,
-        role,
-        permissions,
-        department: profile?.department || 'General',
-        employee_id: employeeRecord?.employee_id || `EMP${Math.floor(Math.random() * 1000).toString().padStart(3, '0')}`,
-        employee_record: employeeRecord,
-      };
+      setProfile(data);
     } catch (error) {
-      console.error('Error enhancing user with role:', error);
-      return {
-        ...baseUser,
-        role: 'employee',
-        permissions: defaultPermissions.employee,
-        department: 'General',
-        employee_id: 'EMP001',
-      };
+      console.error('Error fetching profile:', error);
     }
   };
 
-  const signIn = async (credentials: SignInCredentials) => {
-    console.log('Attempting to sign in with:', credentials);
-    
-    // Master login bypass
-    if (credentials.email === 'master@company.com' && credentials.password === 'Master123!') {
-      masterLogin();
-      return { error: null };
-    }
+  const signIn = async (email: string, password: string) => {
+    setLoading(true);
+    try {
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
 
-    // Check demo accounts
-    if (credentials.email && demoAccounts[credentials.email as keyof typeof demoAccounts]) {
-      const account = demoAccounts[credentials.email as keyof typeof demoAccounts];
+      if (error) throw error;
       
-      if (credentials.password === account.password) {
-        const role = account.role as UserRole;
-        const mockUser = createMockUser(role, credentials.email);
-        
-        // Clear other sessions
-        Object.values(demoAccounts).forEach(acc => {
-          localStorage.removeItem(`demo_session_${acc.role}`);
-        });
-        
-        // Set new session
-        localStorage.setItem(`demo_session_${role}`, 'true');
-        setUser(mockUser);
-        setSession(createMockSession(mockUser));
-        toast.success(`Welcome back, ${role}!`);
-        return { error: null };
-      } else {
-        toast.error('Invalid password');
-        return { error: { message: 'Invalid password' } };
-      }
-    }
-
-    // Try Supabase authentication
-    const { error } = await supabase.auth.signInWithPassword({
-      email: credentials.email || '',
-      password: credentials.password,
-    });
-    
-    if (error) {
+      toast.success('Successfully signed in!');
+    } catch (error: any) {
       console.error('Sign in error:', error);
-      toast.error('Sign in failed: ' + error.message);
-    } else {
-      console.log('Sign in successful');
-      toast.success('Welcome back!');
+      toast.error(error.message || 'Failed to sign in');
+      throw error;
+    } finally {
+      setLoading(false);
     }
-    
-    return { error };
   };
 
-  const signUp = async (userData: SignUpData) => {
-    console.log('Attempting to sign up with:', userData);
-    
-    const redirectUrl = `${window.location.origin}/`;
-    
-    const { error } = await supabase.auth.signUp({
-      email: userData.email,
-      password: userData.password,
-      options: {
-        emailRedirectTo: redirectUrl,
-        data: {
-          first_name: userData.firstName,
-          last_name: userData.lastName,
-          department: userData.department,
-          employee_id: userData.employeeId,
-          role: userData.role || 'employee'
+  const signUp = async (email: string, password: string, userData?: any) => {
+    setLoading(true);
+    try {
+      const { data, error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          data: userData
         }
-      }
-    });
-    
-    if (error) {
+      });
+
+      if (error) throw error;
+      
+      toast.success('Account created successfully! Please check your email to verify your account.');
+    } catch (error: any) {
       console.error('Sign up error:', error);
-      toast.error('Sign up failed: ' + error.message);
-    } else {
-      console.log('Sign up successful - check email for confirmation');
-      toast.success('Account created! Please check your email for confirmation.');
+      toast.error(error.message || 'Failed to create account');
+      throw error;
+    } finally {
+      setLoading(false);
     }
-    
-    return { error };
-  };
-
-  const signInWithOAuth = async (provider: 'google' | 'github' | 'linkedin_oidc') => {
-    const { error } = await supabase.auth.signInWithOAuth({
-      provider,
-      options: {
-        redirectTo: `${window.location.origin}/dashboard`
-      }
-    });
-    
-    if (error) {
-      console.error(`${provider} sign in error:`, error);
-      toast.error(`${provider} sign in failed: ` + error.message);
-    }
-    
-    return { error };
-  };
-
-  const signInWithOTP = async (phone: string) => {
-    const { error } = await supabase.auth.signInWithOtp({
-      phone,
-    });
-    
-    if (error) {
-      console.error('OTP sign in error:', error);
-      toast.error('OTP sign in failed: ' + error.message);
-    } else {
-      toast.success('OTP sent to your phone!');
-    }
-    
-    return { error };
-  };
-
-  const resetPassword = async (email: string) => {
-    const { error } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: `${window.location.origin}/reset-password`,
-    });
-    
-    if (error) {
-      console.error('Password reset error:', error);
-      toast.error('Password reset failed: ' + error.message);
-    } else {
-      toast.success('Password reset link sent to your email!');
-    }
-    
-    return { error };
   };
 
   const signOut = async () => {
-    console.log('Signing out...');
+    setLoading(true);
+    try {
+      const { error } = await supabase.auth.signOut();
+      if (error) throw error;
+      
+      setUser(null);
+      setProfile(null);
+      toast.success('Successfully signed out!');
+    } catch (error: any) {
+      console.error('Sign out error:', error);
+      toast.error(error.message || 'Failed to sign out');
+      throw error;
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const resetPassword = async (email: string) => {
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(email);
+      if (error) throw error;
+      
+      toast.success('Password reset email sent!');
+    } catch (error: any) {
+      console.error('Reset password error:', error);
+      toast.error(error.message || 'Failed to send reset email');
+      throw error;
+    }
+  };
+
+  const updateProfile = async (updates: any) => {
+    if (!user) return;
     
-    // Clear all demo sessions
-    localStorage.removeItem('master_access');
-    Object.values(demoAccounts).forEach(account => {
-      localStorage.removeItem(`demo_session_${account.role}`);
-    });
-    
-    await supabase.auth.signOut();
-    setUser(null);
-    setSession(null);
-    toast.success('Signed out successfully');
-  };
+    try {
+      const { error } = await supabase
+        .from('profiles')
+        .update(updates)
+        .eq('id', user.id);
 
-  const masterLogin = () => {
-    console.log('Master login activated');
-    localStorage.setItem('master_access', 'true');
-    const mockUser = createMockUser('master');
-    setUser(mockUser);
-    setSession(createMockSession(mockUser));
-    toast.success('Master access granted!');
-  };
-
-  const updateTheme = (newTheme: 'light' | 'dark') => {
-    setTheme(newTheme);
-    localStorage.setItem('hrms_theme', newTheme);
-    document.documentElement.classList.toggle('dark', newTheme === 'dark');
-  };
-
-  const updateLanguage = (newLanguage: 'en' | 'es' | 'fr') => {
-    setLanguage(newLanguage);
-    localStorage.setItem('hrms_language', newLanguage);
-  };
-
-  const updateRememberMe = (remember: boolean) => {
-    setRememberMe(remember);
-    localStorage.setItem('hrms_remember_me', remember.toString());
-  };
-
-  const hasPermission = (module: keyof UserPermissions, action: keyof UserPermissions[keyof UserPermissions]) => {
-    if (!user?.permissions) return false;
-    return user.permissions[module][action];
+      if (error) throw error;
+      
+      await fetchProfile(user.id);
+      toast.success('Profile updated successfully!');
+    } catch (error: any) {
+      console.error('Update profile error:', error);
+      toast.error(error.message || 'Failed to update profile');
+      throw error;
+    }
   };
 
   const value = {
     user,
-    session,
+    profile,
     loading,
-    theme,
-    language,
-    rememberMe,
     signIn,
     signUp,
-    signInWithOAuth,
-    signInWithOTP,
-    resetPassword,
     signOut,
-    masterLogin,
-    setTheme: updateTheme,
-    setLanguage: updateLanguage,
-    setRememberMe: updateRememberMe,
-    hasPermission,
+    resetPassword,
+    updateProfile,
   };
 
-  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
+  return (
+    <AuthContext.Provider value={value}>
+      {children}
+    </AuthContext.Provider>
+  );
 };
+
+export const useAuth = () => {
+  const context = useContext(AuthContext);
+  if (context === undefined) {
+    throw new Error('useAuth must be used within an EnhancedAuthProvider');
+  }
+  return context;
+};
+
+// Export demo credentials for easy access
+export { DEMO_CREDENTIALS };
