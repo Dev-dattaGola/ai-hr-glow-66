@@ -65,7 +65,7 @@ const EmployeeForm = ({ employee, onClose }: EmployeeFormProps) => {
     const employeeData = {
       ...formData,
       salary: formData.salary ? parseFloat(formData.salary) : undefined,
-      user_id: formData.user_id || undefined
+      user_id: formData.user_id === 'no_assignment' ? undefined : formData.user_id || undefined
     };
 
     if (employee) {
@@ -140,7 +140,7 @@ const EmployeeForm = ({ employee, onClose }: EmployeeFormProps) => {
               <div className="space-y-3">
                 <Label htmlFor="user_id">Select User Account (Optional)</Label>
                 <Select 
-                  value={formData.user_id} 
+                  value={formData.user_id || 'no_assignment'} 
                   onValueChange={(value) => handleSelectChange('user_id', value)}
                   disabled={usersLoading}
                 >
@@ -148,7 +148,7 @@ const EmployeeForm = ({ employee, onClose }: EmployeeFormProps) => {
                     <SelectValue placeholder={usersLoading ? "Loading users..." : "Select a user account"} />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">No user assignment</SelectItem>
+                    <SelectItem value="no_assignment">No user assignment</SelectItem>
                     {availableUsers.map((user) => (
                       <SelectItem key={user.id} value={user.id}>
                         <div className="flex items-center space-x-2">
