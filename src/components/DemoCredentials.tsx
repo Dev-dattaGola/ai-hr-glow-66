@@ -2,38 +2,65 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Copy, User, Shield, Users, Briefcase } from "lucide-react";
+import { Copy, User, Shield, Users, Crown } from "lucide-react";
 import { toast } from "sonner";
-import { DEMO_CREDENTIALS } from "@/contexts/EnhancedAuthContext";
+
+const credentials = [
+  {
+    email: "master@company.com",
+    password: "Master123!",
+    role: "Master",
+    description: "Full system access, all permissions",
+    icon: Crown,
+    color: 'bg-purple-100 text-purple-800 border-purple-200',
+    first_name: "Master",
+    last_name: "Admin",
+    department: "Administration",
+    position: "Master Administrator"
+  },
+  {
+    email: "admin@company.com", 
+    password: "Admin123!",
+    role: "Admin",
+    description: "Administrative access, most permissions",
+    icon: Shield,
+    color: 'bg-red-100 text-red-800 border-red-200',
+    first_name: "System",
+    last_name: "Admin",
+    department: "Administration",
+    position: "System Administrator"
+  },
+  {
+    email: "hr@company.com",
+    password: "HR123!", 
+    role: "HR",
+    description: "Human Resources access, employee management",
+    icon: Users,
+    color: 'bg-blue-100 text-blue-800 border-blue-200',
+    first_name: "Sarah",
+    last_name: "Johnson",
+    department: "Human Resources",
+    position: "HR Manager"
+  },
+  {
+    email: "employee@company.com",
+    password: "Employee123!",
+    role: "Employee", 
+    description: "Basic employee access, own data only",
+    icon: User,
+    color: 'bg-green-100 text-green-800 border-green-200',
+    first_name: "John",
+    last_name: "Doe",
+    department: "Engineering",
+    position: "Software Developer"
+  }
+];
 
 export const DemoCredentials = () => {
   const copyToClipboard = (text: string) => {
     navigator.clipboard.writeText(text);
     toast.success('Copied to clipboard!');
   };
-
-  const credentials = [
-    {
-      ...DEMO_CREDENTIALS.admin,
-      icon: Shield,
-      color: 'bg-red-100 text-red-800 border-red-200',
-    },
-    {
-      ...DEMO_CREDENTIALS.hr,
-      icon: Users,
-      color: 'bg-blue-100 text-blue-800 border-blue-200',
-    },
-    {
-      ...DEMO_CREDENTIALS.manager,
-      icon: Briefcase,
-      color: 'bg-purple-100 text-purple-800 border-purple-200',
-    },
-    {
-      ...DEMO_CREDENTIALS.employee,
-      icon: User,
-      color: 'bg-green-100 text-green-800 border-green-200',
-    },
-  ];
 
   return (
     <Card className="w-full max-w-4xl mx-auto">
@@ -116,9 +143,9 @@ export const DemoCredentials = () => {
         <div className="mt-6 p-4 bg-blue-50 rounded-lg border border-blue-200">
           <h4 className="font-semibold text-blue-800 mb-2">Role Permissions:</h4>
           <ul className="text-sm text-blue-700 space-y-1">
+            <li><strong>Master:</strong> Complete system control, all administrative functions</li>
             <li><strong>Admin:</strong> Full system access, can manage all employees, view all data</li>
             <li><strong>HR:</strong> Can create/edit employees, access HR features, manage leave requests</li>
-            <li><strong>Manager:</strong> Can view team data, approve requests, limited employee management</li>
             <li><strong>Employee:</strong> Can view own data, submit requests, limited system access</li>
           </ul>
         </div>

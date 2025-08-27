@@ -203,22 +203,25 @@ const ModernAuth = () => {
             <div className="grid grid-cols-2 gap-2">
               <div>
                 <p className="font-medium">Master:</p>
-                <p>master@hrsuite.com</p>
+                <p>master@company.com</p>
+                <p className="text-purple-600 font-mono">Master123!</p>
               </div>
               <div>
                 <p className="font-medium">Admin:</p>
-                <p>admin@hrsuite.com</p>
+                <p>admin@company.com</p>
+                <p className="text-red-600 font-mono">Admin123!</p>
               </div>
               <div>
                 <p className="font-medium">HR:</p>
-                <p>hr@hrsuite.com</p>
+                <p>hr@company.com</p>
+                <p className="text-blue-600 font-mono">HR123!</p>
               </div>
               <div>
                 <p className="font-medium">Employee:</p>
-                <p>employee@hrsuite.com</p>
+                <p>employee@company.com</p>
+                <p className="text-green-600 font-mono">Employee123!</p>
               </div>
             </div>
-            <p className="text-center font-medium">Password: any text</p>
           </CardContent>
         </Card>
 

@@ -17,43 +17,51 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-// Demo credentials with updated professional emails and stronger passwords
+// Demo credentials with updated credentials as requested
 const DEMO_CREDENTIALS = {
-  admin: {
-    email: 'admin@hrcompany.com',
-    password: 'AdminPass123!',
-    role: 'admin',
-    first_name: 'Admin',
-    last_name: 'User',
+  master: {
+    email: 'master@company.com',
+    password: 'Master123!',
+    role: 'master',
+    first_name: 'Master',
+    last_name: 'Admin',
     department: 'Administration',
-    position: 'System Administrator'
+    position: 'Master Administrator',
+    employee_id: 'MASTER001',
+    permissions: ['all']
+  },
+  admin: {
+    email: 'admin@company.com',
+    password: 'Admin123!',
+    role: 'admin',
+    first_name: 'System',
+    last_name: 'Admin',
+    department: 'Administration',
+    position: 'System Administrator',
+    employee_id: 'ADMIN001',
+    permissions: ['manage_employees', 'manage_payroll', 'manage_attendance', 'manage_performance']
   },
   hr: {
-    email: 'hr.manager@hrcompany.com',
-    password: 'HRManager123!',
+    email: 'hr@company.com',
+    password: 'HR123!',
     role: 'hr',
     first_name: 'Sarah',
     last_name: 'Johnson',
     department: 'Human Resources',
-    position: 'HR Manager'
+    position: 'HR Manager',
+    employee_id: 'HR001',
+    permissions: ['manage_employees', 'manage_leave', 'manage_recruitment']
   },
   employee: {
-    email: 'john.doe@hrcompany.com',
+    email: 'employee@company.com',
     password: 'Employee123!',
     role: 'employee',
     first_name: 'John',
     last_name: 'Doe',
     department: 'Engineering',
-    position: 'Software Developer'
-  },
-  manager: {
-    email: 'david.wilson@hrcompany.com',
-    password: 'Manager123!',
-    role: 'manager',
-    first_name: 'David',
-    last_name: 'Wilson',
-    department: 'Engineering',
-    position: 'Engineering Manager'
+    position: 'Software Developer',
+    employee_id: 'EMP001',
+    permissions: ['view_own_data', 'submit_requests']
   }
 };
 
@@ -63,7 +71,17 @@ export const EnhancedAuthProvider = ({ children }: { children: React.ReactNode }
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Get initial session
+    // Check for demo user session in localStorage
+    const demoUser = localStorage.getItem('demo_user');
+    if (demoUser) {
+      const userData = JSON.parse(demoUser);
+      setUser(userData);
+      setProfile(userData);
+      setLoading(false);
+      return;
+    }
+
+    // Get initial session from Supabase
     supabase.auth.getSession().then(({ data: { session } }) => {
       setUser(session?.user ?? null);
       if (session?.user) {
@@ -74,6 +92,9 @@ export const EnhancedAuthProvider = ({ children }: { children: React.ReactNode }
 
     // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      // Clear demo session if real auth event occurs
+      localStorage.removeItem('demo_user');
+      
       setUser(session?.user ?? null);
       if (session?.user) {
         await fetchProfile(session.user.id);
@@ -108,6 +129,41 @@ export const EnhancedAuthProvider = ({ children }: { children: React.ReactNode }
   const signIn = async (email: string, password: string) => {
     setLoading(true);
     try {
+      // Check if it's a demo account
+      const demoAccount = Object.values(DEMO_CREDENTIALS).find(
+        cred => cred.email === email && cred.password === password
+      );
+
+      if (demoAccount) {
+        // Create a mock user object for demo
+        const mockUser: any = {
+          id: `demo-${demoAccount.role}`,
+          email: demoAccount.email,
+          user_metadata: {
+            first_name: demoAccount.first_name,
+            last_name: demoAccount.last_name,
+            role: demoAccount.role,
+            department: demoAccount.department,
+            position: demoAccount.position,
+            employee_id: demoAccount.employee_id,
+            permissions: demoAccount.permissions
+          },
+          app_metadata: {},
+          aud: 'authenticated',
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        };
+
+        // Store demo session
+        localStorage.setItem('demo_user', JSON.stringify(mockUser));
+        
+        setUser(mockUser);
+        setProfile(mockUser);
+        toast.success(`Welcome back, ${demoAccount.first_name}!`);
+        return;
+      }
+
+      // Try real Supabase authentication
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password,
@@ -118,7 +174,7 @@ export const EnhancedAuthProvider = ({ children }: { children: React.ReactNode }
       toast.success('Successfully signed in!');
     } catch (error: any) {
       console.error('Sign in error:', error);
-      toast.error(error.message || 'Failed to sign in');
+      toast.error(error.message || 'Invalid credentials. Try using demo accounts.');
       throw error;
     } finally {
       setLoading(false);
@@ -132,7 +188,8 @@ export const EnhancedAuthProvider = ({ children }: { children: React.ReactNode }
         email,
         password,
         options: {
-          data: userData
+          data: userData,
+          emailRedirectTo: `${window.location.origin}/`
         }
       });
 
@@ -151,6 +208,10 @@ export const EnhancedAuthProvider = ({ children }: { children: React.ReactNode }
   const signOut = async () => {
     setLoading(true);
     try {
+      // Clear demo session
+      localStorage.removeItem('demo_user');
+      
+      // Sign out from Supabase if real session exists
       const { error } = await supabase.auth.signOut();
       if (error) throw error;
       
@@ -168,7 +229,9 @@ export const EnhancedAuthProvider = ({ children }: { children: React.ReactNode }
 
   const resetPassword = async (email: string) => {
     try {
-      const { error } = await supabase.auth.resetPasswordForEmail(email);
+      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: `${window.location.origin}/`
+      });
       if (error) throw error;
       
       toast.success('Password reset email sent!');
