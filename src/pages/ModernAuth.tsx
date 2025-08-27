@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '@/contexts/EnhancedAuthContext';
+import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -9,17 +10,19 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Separator } from '@/components/ui/separator';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Eye, EyeOff, Mail, Phone, Lock, User, Building, ArrowLeft } from 'lucide-react';
+import { Eye, EyeOff, Mail, Phone, Lock, ArrowLeft } from 'lucide-react';
 import { toast } from 'sonner';
 
 const ModernAuth = () => {
   const navigate = useNavigate();
-  const { signIn, signUp, signInWithOAuth, signInWithOTP, resetPassword, user, loading, rememberMe, setRememberMe } = useAuth();
+  // Only take what's available from AuthContext
+  const { signIn, signUp, resetPassword, user, loading } = useAuth();
   
   const [activeTab, setActiveTab] = useState('signin');
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [rememberMe, setRememberMe] = useState(false);
 
   // Sign In Form State
   const [signInData, setSignInData] = useState({
@@ -62,19 +65,11 @@ const ModernAuth = () => {
 
     setIsLoading(true);
     try {
-      const { error } = await signIn({
-        email: signInData.email,
-        password: signInData.password,
-      });
-
-      if (error) {
-        toast.error(error.message);
-      } else {
-        toast.success('Welcome back!');
-        navigate('/dashboard');
-      }
-    } catch (err) {
-      toast.error('An unexpected error occurred');
+      await signIn(signInData.email, signInData.password);
+      toast.success('Welcome back!');
+      navigate('/dashboard');
+    } catch (err: any) {
+      toast.error(err?.message ?? 'Failed to sign in');
     } finally {
       setIsLoading(false);
     }
@@ -95,24 +90,22 @@ const ModernAuth = () => {
 
     setIsLoading(true);
     try {
-      const { error } = await signUp({
-        email: signUpData.email,
-        password: signUpData.password,
-        firstName: signUpData.firstName,
-        lastName: signUpData.lastName,
-        department: signUpData.department,
-        employeeId: signUpData.employeeId,
-        role: signUpData.role,
-      });
-
-      if (error) {
-        toast.error(error.message);
-      } else {
-        toast.success('Account created successfully! Please check your email.');
-        setActiveTab('signin');
-      }
-    } catch (err) {
-      toast.error('An unexpected error occurred');
+      await signUp(
+        signUpData.email,
+        signUpData.password,
+        {
+          // Store consistent metadata keys
+          first_name: signUpData.firstName,
+          last_name: signUpData.lastName,
+          department: signUpData.department,
+          employee_id: signUpData.employeeId,
+          role: signUpData.role,
+        }
+      );
+      toast.success('Account created successfully! Please check your email.');
+      setActiveTab('signin');
+    } catch (err: any) {
+      toast.error(err?.message ?? 'Failed to create account');
     } finally {
       setIsLoading(false);
     }
@@ -121,11 +114,17 @@ const ModernAuth = () => {
   const handleOAuthSignIn = async (provider: 'google' | 'github' | 'linkedin_oidc') => {
     setIsLoading(true);
     try {
-      const { error } = await signInWithOAuth(provider);
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider,
+        options: {
+          // Redirect back to the app; adjust if needed
+          redirectTo: `${window.location.origin}/dashboard`,
+        },
+      });
       if (error) {
         toast.error(`${provider} sign in failed: ${error.message}`);
       }
-    } catch (err) {
+    } catch {
       toast.error('OAuth sign in failed');
     } finally {
       setIsLoading(false);
@@ -141,16 +140,12 @@ const ModernAuth = () => {
 
     setIsLoading(true);
     try {
-      const { error } = await resetPassword(resetEmail);
-      if (error) {
-        toast.error(error.message);
-      } else {
-        toast.success('Password reset link sent to your email!');
-        setShowReset(false);
-        setResetEmail('');
-      }
-    } catch (err) {
-      toast.error('Failed to send reset email');
+      await resetPassword(resetEmail);
+      toast.success('Password reset link sent to your email!');
+      setShowReset(false);
+      setResetEmail('');
+    } catch (err: any) {
+      toast.error(err?.message ?? 'Failed to send reset email');
     } finally {
       setIsLoading(false);
     }
@@ -165,13 +160,13 @@ const ModernAuth = () => {
 
     setIsLoading(true);
     try {
-      const { error } = await signInWithOTP(otpPhone);
+      const { error } = await supabase.auth.signInWithOtp({ phone: otpPhone });
       if (error) {
         toast.error(error.message);
       } else {
         toast.success('OTP sent to your phone!');
       }
-    } catch (err) {
+    } catch {
       toast.error('Failed to send OTP');
     } finally {
       setIsLoading(false);
@@ -293,7 +288,7 @@ const ModernAuth = () => {
                         <Checkbox
                           id="remember-me"
                           checked={rememberMe}
-                          onCheckedChange={(checked) => setRememberMe(checked as boolean)}
+                          onCheckedChange={(checked) => setRememberMe(!!checked)}
                         />
                         <Label htmlFor="remember-me" className="text-sm">Remember me</Label>
                       </div>

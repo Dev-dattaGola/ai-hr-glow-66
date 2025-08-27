@@ -33,7 +33,10 @@ import SettingsComponent from "@/components/Settings";
 
 const EnhancedIndex = () => {
   const [activeModule, setActiveModule] = useState("dashboard");
-  const { user, signOut, loading, theme, setTheme, language, setLanguage } = useAuth();
+  // Use only available values from AuthContext; add local theme/language
+  const { user, profile, signOut, loading } = useAuth();
+  const [theme, setTheme] = useState<'light' | 'dark'>('light');
+  const [language, setLanguage] = useState<'en' | 'es' | 'fr'>('en');
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -57,6 +60,21 @@ const EnhancedIndex = () => {
     return null;
   }
 
+  // Safely derive role, permissions, department, and employee id
+  const role = (profile?.role ||
+    (user.user_metadata as any)?.role ||
+    'employee') as string;
+
+  const permissions = ((profile as any)?.permissions ||
+    (user.user_metadata as any)?.permissions) as
+    | Record<string, { read?: boolean; write?: boolean }>
+    | undefined;
+
+  const department =
+    (profile as any)?.department || (user.user_metadata as any)?.department || '';
+  const employeeId =
+    (profile as any)?.employee_id || (user.user_metadata as any)?.employee_id || '';
+
   const handleSignOut = async () => {
     await signOut();
     navigate("/");
@@ -66,8 +84,8 @@ const EnhancedIndex = () => {
     navigate("/");
   };
 
-  const getRoleColor = (role: string) => {
-    switch (role) {
+  const getRoleColor = (r: string) => {
+    switch (r) {
       case 'master': return 'bg-red-600';
       case 'admin': return 'bg-orange-600';
       case 'hr': return 'bg-green-600';
@@ -77,7 +95,7 @@ const EnhancedIndex = () => {
   };
 
   const renderDashboard = () => {
-    switch (user.role) {
+    switch (role) {
       case 'master':
         return <MasterDashboard setActiveModule={setActiveModule} />;
       case 'admin':
@@ -111,10 +129,10 @@ const EnhancedIndex = () => {
       letters: 'documents',
       helpdesk: 'employees',
       settings: 'settings',
-    };
+    } as const;
 
     const requiredModule = modulePermissions[activeModule as keyof typeof modulePermissions];
-    if (requiredModule && !user.permissions?.[requiredModule as keyof typeof user.permissions]?.read) {
+    if (requiredModule && !(permissions?.[requiredModule]?.read)) {
       return (
         <div className="flex items-center justify-center h-96">
           <div className="text-center">
@@ -177,8 +195,8 @@ const EnhancedIndex = () => {
                   <h1 className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
                     HR Management System
                   </h1>
-                  <Badge className={`${getRoleColor(user.role || 'employee')} text-white`}>
-                    {(user.role || 'employee').charAt(0).toUpperCase() + (user.role || 'employee').slice(1)}
+                  <Badge className={`${getRoleColor(role)} text-white`}>
+                    {role.charAt(0).toUpperCase() + role.slice(1)}
                   </Badge>
                 </div>
                 
@@ -193,7 +211,7 @@ const EnhancedIndex = () => {
                   </Button>
                   
                   {/* Language Selector */}
-                  <Select value={language} onValueChange={setLanguage}>
+                  <Select value={language} onValueChange={(v) => setLanguage(v as 'en' | 'es' | 'fr')}>
                     <SelectTrigger className="w-20">
                       <Globe className="w-4 h-4" />
                     </SelectTrigger>
@@ -211,7 +229,7 @@ const EnhancedIndex = () => {
                         {user.user_metadata?.first_name} {user.user_metadata?.last_name}
                       </p>
                       <p className="text-xs text-muted-foreground">
-                        {user.department} • {user.employee_id}
+                        {department} • {employeeId}
                       </p>
                     </div>
                   </div>
