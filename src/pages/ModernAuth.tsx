@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/EnhancedAuthContext';
@@ -130,7 +129,7 @@ const ModernAuth = () => {
     }
   };
 
-  const handleOAuthSignIn = async (provider: 'google' | 'microsoft' | 'linkedin_oidc') => {
+  const handleOAuthSignIn = async (provider: 'google' | 'github' | 'linkedin_oidc') => {
     setIsLoading(true);
     try {
       await signInWithOAuth(provider);
@@ -521,12 +520,12 @@ const ModernAuth = () => {
                       type="button"
                       variant="outline"
                       size="sm"
-                      onClick={() => handleOAuthSignIn('microsoft')}
+                      onClick={() => handleOAuthSignIn('github')}
                       disabled={isLoading}
                       className="flex items-center gap-2"
                     >
                       <Building2 className="w-4 h-4" />
-                      Microsoft
+                      GitHub
                     </Button>
                     <Button
                       type="button"

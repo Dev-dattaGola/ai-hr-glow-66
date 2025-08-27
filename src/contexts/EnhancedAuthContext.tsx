@@ -1,4 +1,3 @@
-
 import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
@@ -207,7 +206,7 @@ export const EnhancedAuthProvider = ({ children }: { children: ReactNode }) => {
         role,
         permissions,
         department: profile?.department || 'General',
-        employee_id: profile?.employee_id || 'EMP001',
+        employee_id: profile?.employee_id || `EMP${Math.floor(Math.random() * 1000).toString().padStart(3, '0')}`,
       };
     } catch (error) {
       console.error('Error enhancing user with role:', error);
@@ -435,4 +434,37 @@ export const EnhancedAuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
+};
+
+const createMockUser = (role: UserRole): EnhancedUser => {
+  const now = new Date().toISOString();
+  return {
+    id: `${role}-user-id`,
+    email: `${role}@hrsuite.com`,
+    app_metadata: { provider: 'email', roles: [role] },
+    user_metadata: { first_name: role.charAt(0).toUpperCase() + role.slice(1), last_name: 'User' },
+    aud: 'authenticated',
+    aud: 'authenticated',
+    created_at: now,
+    confirmed_at: now,
+    last_sign_in_at: now,
+    updated_at: now,
+    identities: [],
+    role,
+    permissions: defaultPermissions[role],
+    department: 'System',
+    employee_id: `${role.toUpperCase()}001`,
+  } as EnhancedUser;
+};
+
+const createMockSession = (mockUser: EnhancedUser): Session => {
+  const nowSec = Math.floor(Date.now() / 1000);
+  return {
+    access_token: `${mockUser.role}-access-token`,
+    token_type: 'bearer',
+    expires_in: 3600,
+    expires_at: nowSec + 3600,
+    refresh_token: `${mockUser.role}-refresh-token`,
+    user: mockUser,
+  } as Session;
 };
