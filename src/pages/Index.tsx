@@ -35,6 +35,14 @@ const Index = () => {
     navigate("/home");
   };
 
+  // Default role and access function for basic Index page
+  const userRole = "employee";
+  const hasModuleAccess = (module: string) => {
+    // Basic access - everyone can access core modules
+    const basicModules = ["dashboard", "employees", "attendance", "leave", "helpdesk", "settings"];
+    return basicModules.includes(module);
+  };
+
   const renderActiveModule = () => {
     switch (activeModule) {
       case "dashboard":
@@ -74,7 +82,12 @@ const Index = () => {
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
       <SidebarProvider>
         <div className="flex w-full min-h-screen">
-          <Sidebar activeModule={activeModule} setActiveModule={setActiveModule} />
+          <Sidebar 
+            activeModule={activeModule} 
+            setActiveModule={setActiveModule}
+            userRole={userRole}
+            hasModuleAccess={hasModuleAccess}
+          />
           <main className="flex-1 overflow-hidden">
             {/* Header */}
             <div className="bg-white/80 backdrop-blur-sm border-b border-gray-200 px-6 py-4">
