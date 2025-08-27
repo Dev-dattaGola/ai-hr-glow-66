@@ -1,39 +1,40 @@
 import { Bell, Settings, LogOut, Sparkles, LayoutDashboard, User, UserPlus, Home, Users, DollarSign, MessageSquare, BookOpen } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { 
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { useAuth } from '@/contexts/EnhancedAuthContext';
 import { useNavigate } from 'react-router-dom';
 
-interface Profile {
-  id: string;
-  first_name: string;
-  last_name: string;
-  email: string;
-  department: string;
-  role: string;
-  avatar_url: string;
-}
-
-interface HomeNavbarProps {
-  profile: Profile | null;
-  onSignOut: () => void;
-  isAuthenticated?: boolean;
-}
-
-export const HomeNavbar = ({ profile, onSignOut, isAuthenticated = false }: HomeNavbarProps) => {
+const HomeNavbar = ({ 
+  isAuthenticated, 
+  firstName = '', 
+  onSignOut 
+}: { 
+  isAuthenticated: boolean;
+  firstName?: string;
+  onSignOut?: () => void;
+}) => {
+  const { user, signOut } = useAuth();
   const navigate = useNavigate();
 
-  const handleNotifications = () => {
-    console.log('Opening notifications...');
-  };
+  // Use the new auth context if available, otherwise fall back to props
+  const authenticated = user ? true : isAuthenticated;
+  const userFirstName = user?.user_metadata?.first_name || firstName;
 
-  const handleSettings = () => {
-    console.log('Opening settings...');
-  };
-
-  const handleSignOut = () => {
-    onSignOut();
-    navigate('/');
+  const handleSignOut = async () => {
+    if (user) {
+      await signOut();
+    } else if (onSignOut) {
+      onSignOut();
+    }
   };
 
   const handleDashboard = () => {
@@ -41,38 +42,18 @@ export const HomeNavbar = ({ profile, onSignOut, isAuthenticated = false }: Home
   };
 
   const handleLogin = () => {
-    navigate('/auth');
-  };
-
-  const handleSignup = () => {
-    navigate('/auth');
+    navigate('/login');
   };
 
   const scrollToSection = (sectionId: string) => {
-    // If we're not on the home page, navigate to home first
-    if (window.location.pathname !== '/' && window.location.pathname !== '/home') {
-      navigate('/', { replace: true });
-      // Wait for navigation to complete then scroll
-      setTimeout(() => {
-        const element = document.getElementById(sectionId);
-        if (element) {
-          element.scrollIntoView({ behavior: 'smooth' });
-        }
-      }, 100);
-    } else {
-      const element = document.getElementById(sectionId);
-      if (element) {
-        element.scrollIntoView({ behavior: 'smooth' });
-      }
+    const element = document.getElementById(sectionId);
+    if (element) {
+      element.scrollIntoView({ behavior: 'smooth' });
     }
   };
 
   const handleHome = () => {
-    if (window.location.pathname !== '/' && window.location.pathname !== '/home') {
-      navigate('/');
-    } else {
-      window.scrollTo({ top: 0, behavior: 'smooth' });
-    }
+    navigate('/');
   };
 
   const handleAbout = () => {
@@ -92,104 +73,171 @@ export const HomeNavbar = ({ profile, onSignOut, isAuthenticated = false }: Home
   };
 
   return (
-    <header className="bg-white/80 backdrop-blur-sm border-b border-gray-200 sticky top-0 z-50">
+    <nav className="bg-white/95 backdrop-blur-sm border-b border-gray-200 sticky top-0 z-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex items-center justify-between h-16">
-          <div className="flex items-center space-x-4">
-            <img 
-              src="/lovable-uploads/cdd359c8-6f37-4349-a589-639c51d7f17d.png" 
-              alt="HR Suite Logo" 
-              className="h-10 w-auto cursor-pointer"
-              onClick={handleHome}
-            />
-            <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">
-              <Sparkles className="w-3 h-3 mr-1" />
-              AI-Powered
-            </Badge>
+        <div className="flex justify-between items-center h-16">
+          {/* Logo */}
+          <div className="flex items-center">
+            <div className="flex-shrink-0 flex items-center">
+              <Sparkles className="h-8 w-8 text-blue-600 mr-2" />
+              <span className="font-bold text-xl bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
+                HR Suite
+              </span>
+            </div>
           </div>
 
-          {/* Navigation Menu */}
-          <nav className="hidden md:flex items-center space-x-2">
-            <Button variant="ghost" size="sm" onClick={handleHome}>
-              <Home className="w-4 h-4 mr-2" />
-              Home
-            </Button>
-            <Button variant="ghost" size="sm" onClick={() => scrollToSection('features')}>
-              <Users className="w-4 h-4 mr-2" />
-              Features
-            </Button>
-            <Button variant="ghost" size="sm" onClick={() => scrollToSection('pricing')}>
-              <DollarSign className="w-4 h-4 mr-2" />
-              Pricing
-            </Button>
-            <Button variant="ghost" size="sm" onClick={() => scrollToSection('testimonials')}>
-              <MessageSquare className="w-4 h-4 mr-2" />
-              Testimonials
-            </Button>
-            <Button variant="ghost" size="sm" onClick={handleAbout}>
-              About
-            </Button>
-            <Button variant="ghost" size="sm" onClick={handleBlog}>
-              <BookOpen className="w-4 h-4 mr-2" />
-              Blog
-            </Button>
-            <Button variant="ghost" size="sm" onClick={handleContact}>
-              Contact
-            </Button>
-            <Button variant="ghost" size="sm" onClick={handleHelp}>
-              Help
-            </Button>
-          </nav>
-          
+          {/* Navigation Links */}
+          <div className="hidden md:block">
+            <div className="ml-10 flex items-baseline space-x-4">
+              <Button 
+                variant="ghost" 
+                onClick={handleHome}
+                className="hover:bg-blue-50 hover:text-blue-600"
+              >
+                <Home className="w-4 h-4 mr-2" />
+                Home
+              </Button>
+              <Button 
+                variant="ghost" 
+                onClick={() => scrollToSection('features')}
+                className="hover:bg-blue-50 hover:text-blue-600"
+              >
+                <Users className="w-4 h-4 mr-2" />
+                Features
+              </Button>
+              <Button 
+                variant="ghost" 
+                onClick={() => scrollToSection('pricing')}
+                className="hover:bg-blue-50 hover:text-blue-600"
+              >
+                <DollarSign className="w-4 h-4 mr-2" />
+                Pricing
+              </Button>
+              <Button 
+                variant="ghost" 
+                onClick={() => scrollToSection('testimonials')}
+                className="hover:bg-blue-50 hover:text-blue-600"
+              >
+                <MessageSquare className="w-4 h-4 mr-2" />
+                Testimonials
+              </Button>
+              <Button 
+                variant="ghost" 
+                onClick={handleAbout}
+                className="hover:bg-blue-50 hover:text-blue-600"
+              >
+                About
+              </Button>
+              <Button 
+                variant="ghost" 
+                onClick={handleBlog}
+                className="hover:bg-blue-50 hover:text-blue-600"
+              >
+                <BookOpen className="w-4 h-4 mr-2" />
+                Blog
+              </Button>
+              <Button 
+                variant="ghost" 
+                onClick={handleContact}
+                className="hover:bg-blue-50 hover:text-blue-600"
+              >
+                Contact
+              </Button>
+              <Button 
+                variant="ghost" 
+                onClick={handleHelp}
+                className="hover:bg-blue-50 hover:text-blue-600"
+              >
+                Help
+              </Button>
+            </div>
+          </div>
+
+          {/* Right side */}
           <div className="flex items-center space-x-4">
-            {isAuthenticated ? (
+            {authenticated ? (
               <>
-                <Button variant="ghost" size="sm" onClick={handleDashboard}>
-                  <LayoutDashboard className="w-4 h-4 mr-2" />
-                  Dashboard
+                {/* Notifications */}
+                <Button variant="ghost" size="sm" className="relative">
+                  <Bell className="h-5 w-5" />
+                  <Badge className="absolute -top-1 -right-1 h-4 w-4 p-0 text-xs bg-red-500">
+                    3
+                  </Badge>
                 </Button>
-                <Button variant="ghost" size="sm" onClick={handleNotifications}>
-                  <Bell className="w-4 h-4" />
-                </Button>
-                <Button variant="ghost" size="sm" onClick={handleSettings}>
-                  <Settings className="w-4 h-4" />
-                </Button>
-                
-                <div className="flex items-center space-x-3">
-                  <Avatar className="h-8 w-8">
-                    <AvatarImage src={profile?.avatar_url} />
-                    <AvatarFallback className="bg-gradient-to-r from-blue-500 to-indigo-500 text-white text-sm">
-                      {profile?.first_name?.[0]}{profile?.last_name?.[0]}
-                    </AvatarFallback>
-                  </Avatar>
-                  <div className="hidden lg:block text-sm">
-                    <p className="font-medium text-gray-900">
-                      {profile?.first_name} {profile?.last_name}
-                    </p>
-                    <p className="text-gray-500 text-xs">{profile?.department}</p>
-                  </div>
-                </div>
-                
-                <Button variant="outline" size="sm" onClick={handleSignOut}>
-                  <LogOut className="w-4 h-4 mr-2" />
-                  Sign Out
-                </Button>
+
+                {/* User Menu */}
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="ghost" className="relative h-8 w-8 rounded-full">
+                      <Avatar className="h-8 w-8">
+                        <AvatarImage src="/placeholder-avatar.jpg" alt={userFirstName} />
+                        <AvatarFallback className="bg-blue-600 text-white">
+                          {userFirstName?.charAt(0)?.toUpperCase() || 'U'}
+                        </AvatarFallback>
+                      </Avatar>
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent className="w-56" align="end" forceMount>
+                    <DropdownMenuLabel className="font-normal">
+                      <div className="flex flex-col space-y-1">
+                        <p className="text-sm font-medium leading-none">
+                          {userFirstName} {user?.user_metadata?.last_name}
+                        </p>
+                        <p className="text-xs leading-none text-muted-foreground">
+                          {user?.email}
+                        </p>
+                        {user?.role && (
+                          <Badge variant="secondary" className="w-fit mt-1">
+                            {user.role.charAt(0).toUpperCase() + user.role.slice(1)}
+                          </Badge>
+                        )}
+                      </div>
+                    </DropdownMenuLabel>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem onClick={handleDashboard} className="cursor-pointer">
+                      <LayoutDashboard className="mr-2 h-4 w-4" />
+                      <span>Dashboard</span>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem className="cursor-pointer">
+                      <User className="mr-2 h-4 w-4" />
+                      <span>Profile</span>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem className="cursor-pointer">
+                      <Settings className="mr-2 h-4 w-4" />
+                      <span>Settings</span>
+                    </DropdownMenuItem>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem onClick={handleSignOut} className="cursor-pointer">
+                      <LogOut className="mr-2 h-4 w-4" />
+                      <span>Log out</span>
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
               </>
             ) : (
-              <>
-                <Button variant="ghost" size="sm" onClick={handleLogin}>
+              <div className="flex items-center space-x-2">
+                <Button 
+                  variant="ghost" 
+                  onClick={handleLogin}
+                  className="hover:bg-blue-50 hover:text-blue-600"
+                >
                   <User className="w-4 h-4 mr-2" />
                   Login
                 </Button>
-                <Button variant="default" size="sm" onClick={handleSignup}>
+                <Button 
+                  onClick={handleLogin}
+                  className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white"
+                >
                   <UserPlus className="w-4 h-4 mr-2" />
                   Sign Up
                 </Button>
-              </>
+              </div>
             )}
           </div>
         </div>
       </div>
-    </header>
+    </nav>
   );
 };
+
+export default HomeNavbar;
