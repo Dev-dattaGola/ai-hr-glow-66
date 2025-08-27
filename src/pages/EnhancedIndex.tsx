@@ -33,7 +33,6 @@ import SettingsComponent from "@/components/Settings";
 
 const EnhancedIndex = () => {
   const [activeModule, setActiveModule] = useState("dashboard");
-  // Use only available values from AuthContext; add local theme/language
   const { user, profile, signOut, loading } = useAuth();
   const [theme, setTheme] = useState<'light' | 'dark'>('light');
   const [language, setLanguage] = useState<'en' | 'es' | 'fr'>('en');
@@ -60,20 +59,12 @@ const EnhancedIndex = () => {
     return null;
   }
 
-  // Safely derive role, permissions, department, and employee id
-  const role = (profile?.role ||
-    (user.user_metadata as any)?.role ||
-    'employee') as string;
-
-  const permissions = ((profile as any)?.permissions ||
-    (user.user_metadata as any)?.permissions) as
-    | Record<string, { read?: boolean; write?: boolean }>
-    | undefined;
-
-  const department =
-    (profile as any)?.department || (user.user_metadata as any)?.department || '';
-  const employeeId =
-    (profile as any)?.employee_id || (user.user_metadata as any)?.employee_id || '';
+  // Get role and features from user metadata (demo accounts) or profile
+  const role = (user.user_metadata?.role || profile?.role || 'employee') as string;
+  const userFeatures = user.user_metadata?.features || profile?.features || {};
+  const userPermissions = user.user_metadata?.permissions || profile?.permissions || [];
+  const department = user.user_metadata?.department || profile?.department || '';
+  const employeeId = user.user_metadata?.employee_id || profile?.employee_id || '';
 
   const handleSignOut = async () => {
     await signOut();
@@ -91,6 +82,48 @@ const EnhancedIndex = () => {
       case 'hr': return 'bg-green-600';
       case 'employee': return 'bg-blue-600';
       default: return 'bg-gray-600';
+    }
+  };
+
+  // Check if user has access to a specific module
+  const hasModuleAccess = (module: string) => {
+    // Master role has access to everything
+    if (role === 'master' || userPermissions.includes('all')) {
+      return true;
+    }
+
+    // Check specific feature access
+    switch (module) {
+      case 'dashboard':
+        return true; // Everyone has dashboard access
+      case 'employees':
+        return userFeatures.employees?.access || userPermissions.includes('manage_employees') || userPermissions.includes('view_all_employees');
+      case 'attendance':
+        return userFeatures.attendance?.access || userPermissions.includes('manage_attendance') || userPermissions.includes('clock_in_out');
+      case 'leave':
+        return userFeatures.leave?.access || userPermissions.includes('approve_leave_requests') || userPermissions.includes('request_leave');
+      case 'payroll':
+        return userFeatures.payroll?.access || userPermissions.includes('manage_payroll') || userPermissions.includes('view_own_payroll');
+      case 'recruitment':
+        return userFeatures.recruitment?.access || userPermissions.includes('manage_recruitment') || userPermissions.includes('manage_candidates');
+      case 'performance':
+        return userFeatures.performance?.access || userPermissions.includes('manage_performance') || userPermissions.includes('view_own_performance');
+      case 'training':
+        return userFeatures.training?.access || userPermissions.includes('manage_training') || userPermissions.includes('access_training');
+      case 'expenses':
+        return userFeatures.expenses?.access || userPermissions.includes('manage_expenses') || userPermissions.includes('submit_expenses');
+      case 'compliance':
+        return userFeatures.settings?.access || userPermissions.includes('policy_management') || userPermissions.includes('compliance_tracking');
+      case 'analytics':
+        return userFeatures.analytics?.access || userPermissions.includes('view_analytics') || userPermissions.includes('advanced_analytics');
+      case 'letters':
+        return userFeatures.settings?.access || userPermissions.includes('manage_documents') || role === 'hr' || role === 'admin';
+      case 'helpdesk':
+        return true; // Everyone can access helpdesk
+      case 'settings':
+        return userFeatures.settings?.access || userPermissions.includes('manage_settings') || userPermissions.includes('edit_own_profile');
+      default:
+        return false;
     }
   };
 
@@ -114,30 +147,18 @@ const EnhancedIndex = () => {
       return renderDashboard();
     }
 
-    // Check permissions before rendering modules
-    const modulePermissions = {
-      employees: 'employees',
-      attendance: 'attendance',
-      leave: 'leave',
-      payroll: 'payroll',
-      recruitment: 'employees',
-      performance: 'employees',
-      training: 'employees',
-      expenses: 'expenses',
-      compliance: 'documents',
-      analytics: 'reports',
-      letters: 'documents',
-      helpdesk: 'employees',
-      settings: 'settings',
-    } as const;
-
-    const requiredModule = modulePermissions[activeModule as keyof typeof modulePermissions];
-    if (requiredModule && !(permissions?.[requiredModule]?.read)) {
+    // Check if user has access to the requested module
+    if (!hasModuleAccess(activeModule)) {
       return (
         <div className="flex items-center justify-center h-96">
           <div className="text-center">
             <h2 className="text-2xl font-bold text-gray-600 mb-4">Access Denied</h2>
-            <p className="text-gray-500">You don't have permission to access this module.</p>
+            <p className="text-gray-500 mb-2">
+              You don't have permission to access the <strong>{activeModule}</strong> module.
+            </p>
+            <p className="text-sm text-gray-400 mb-4">
+              Your role: <span className="font-semibold">{role.toUpperCase()}</span>
+            </p>
             <Button onClick={() => setActiveModule("dashboard")} className="mt-4">
               Return to Dashboard
             </Button>
@@ -185,6 +206,8 @@ const EnhancedIndex = () => {
           <Sidebar 
             activeModule={activeModule} 
             setActiveModule={setActiveModule}
+            userRole={role}
+            hasModuleAccess={hasModuleAccess}
           />
           
           <main className="flex-1 overflow-hidden">
@@ -239,10 +262,12 @@ const EnhancedIndex = () => {
                     Home
                   </Button>
                   
-                  <Button variant="outline" size="sm" onClick={() => setActiveModule('settings')}>
-                    <SettingsIcon className="w-4 h-4 mr-2" />
-                    Settings
-                  </Button>
+                  {hasModuleAccess('settings') && (
+                    <Button variant="outline" size="sm" onClick={() => setActiveModule('settings')}>
+                      <SettingsIcon className="w-4 h-4 mr-2" />
+                      Settings
+                    </Button>
+                  )}
                   
                   <Button variant="outline" size="sm" onClick={handleSignOut}>
                     <LogOut className="w-4 h-4 mr-2" />
