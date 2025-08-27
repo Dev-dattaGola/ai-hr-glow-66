@@ -14,6 +14,7 @@ export interface UserPermissions {
   documents: { read: boolean; write: boolean; approve: boolean; delete: boolean };
   employees: { read: boolean; write: boolean; approve: boolean; delete: boolean };
   settings: { read: boolean; write: boolean; approve: boolean; delete: boolean };
+  expenses: { read: boolean; write: boolean; approve: boolean; delete: boolean };
 }
 
 export interface EnhancedUser extends User {
@@ -32,7 +33,7 @@ interface AuthContextType {
   rememberMe: boolean;
   signIn: (credentials: SignInCredentials) => Promise<{ error: any }>;
   signUp: (userData: SignUpData) => Promise<{ error: any }>;
-  signInWithOAuth: (provider: 'google' | 'microsoft' | 'linkedin_oidc') => Promise<{ error: any }>;
+  signInWithOAuth: (provider: 'google' | 'github' | 'linkedin_oidc') => Promise<{ error: any }>;
   signInWithOTP: (phone: string) => Promise<{ error: any }>;
   resetPassword: (email: string) => Promise<{ error: any }>;
   signOut: () => Promise<void>;
@@ -78,6 +79,7 @@ const defaultPermissions: Record<UserRole, UserPermissions> = {
     documents: { read: true, write: true, approve: true, delete: true },
     employees: { read: true, write: true, approve: true, delete: true },
     settings: { read: true, write: true, approve: true, delete: true },
+    expenses: { read: true, write: true, approve: true, delete: true },
   },
   admin: {
     payroll: { read: true, write: true, approve: true, delete: false },
@@ -87,6 +89,7 @@ const defaultPermissions: Record<UserRole, UserPermissions> = {
     documents: { read: true, write: true, approve: true, delete: false },
     employees: { read: true, write: true, approve: false, delete: false },
     settings: { read: true, write: false, approve: false, delete: false },
+    expenses: { read: true, write: true, approve: true, delete: false },
   },
   hr: {
     payroll: { read: true, write: false, approve: false, delete: false },
@@ -96,6 +99,7 @@ const defaultPermissions: Record<UserRole, UserPermissions> = {
     documents: { read: true, write: true, approve: false, delete: false },
     employees: { read: true, write: true, approve: false, delete: false },
     settings: { read: false, write: false, approve: false, delete: false },
+    expenses: { read: true, write: true, approve: false, delete: false },
   },
   employee: {
     payroll: { read: true, write: false, approve: false, delete: false },
@@ -105,6 +109,7 @@ const defaultPermissions: Record<UserRole, UserPermissions> = {
     documents: { read: true, write: false, approve: false, delete: false },
     employees: { read: false, write: false, approve: false, delete: false },
     settings: { read: false, write: false, approve: false, delete: false },
+    expenses: { read: true, write: true, approve: false, delete: false },
   },
 };
 
@@ -172,11 +177,27 @@ export const EnhancedAuthProvider = ({ children }: { children: ReactNode }) => {
 
   const enhanceUserWithRole = async (baseUser: User): Promise<EnhancedUser> => {
     try {
-      const { data: profile } = await supabase
+      // Try to fetch from profiles table, but handle if it doesn't exist
+      const { data: profile, error } = await supabase
         .from('profiles')
-        .select('role, department, employee_id')
+        .select('*')
         .eq('id', baseUser.id)
         .single();
+
+      if (error) {
+        console.log('Profile fetch error (this is normal for demo):', error);
+        // Use default role for demo purposes
+        const role = 'employee' as UserRole;
+        const permissions = defaultPermissions[role];
+
+        return {
+          ...baseUser,
+          role,
+          permissions,
+          department: 'General',
+          employee_id: 'EMP001',
+        };
+      }
 
       const role = (profile?.role as UserRole) || 'employee';
       const permissions = defaultPermissions[role];
@@ -185,8 +206,8 @@ export const EnhancedAuthProvider = ({ children }: { children: ReactNode }) => {
         ...baseUser,
         role,
         permissions,
-        department: profile?.department,
-        employee_id: profile?.employee_id,
+        department: profile?.department || 'General',
+        employee_id: profile?.employee_id || 'EMP001',
       };
     } catch (error) {
       console.error('Error enhancing user with role:', error);
@@ -194,6 +215,8 @@ export const EnhancedAuthProvider = ({ children }: { children: ReactNode }) => {
         ...baseUser,
         role: 'employee',
         permissions: defaultPermissions.employee,
+        department: 'General',
+        employee_id: 'EMP001',
       };
     }
   };
@@ -303,7 +326,7 @@ export const EnhancedAuthProvider = ({ children }: { children: ReactNode }) => {
     return { error };
   };
 
-  const signInWithOAuth = async (provider: 'google' | 'microsoft' | 'linkedin_oidc') => {
+  const signInWithOAuth = async (provider: 'google' | 'github' | 'linkedin_oidc') => {
     const { error } = await supabase.auth.signInWithOAuth({
       provider,
       options: {

@@ -6,7 +6,7 @@ import { Sidebar } from "@/components/Sidebar";
 import { SidebarProvider } from "@/components/ui/sidebar";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { LogOut, Home, Settings, Sun, Moon, Globe } from "lucide-react";
+import { LogOut, Home, Settings as SettingsIcon, Sun, Moon, Globe } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 // Import role-specific dashboards
@@ -29,7 +29,7 @@ import TrainingDevelopment from "@/components/TrainingDevelopment";
 import ExpenseManagement from "@/components/ExpenseManagement";
 import ComplianceDocuments from "@/components/ComplianceDocuments";
 import HelpdeskChatbot from "@/components/HelpdeskChatbot";
-import Settings from "@/components/Settings";
+import SettingsComponent from "@/components/Settings";
 
 const EnhancedIndex = () => {
   const [activeModule, setActiveModule] = useState("dashboard");
@@ -154,7 +154,7 @@ const EnhancedIndex = () => {
       case "helpdesk":
         return <HelpdeskChatbot />;
       case "settings":
-        return <Settings />;
+        return <SettingsComponent />;
       default:
         return renderDashboard();
     }
@@ -167,8 +167,6 @@ const EnhancedIndex = () => {
           <Sidebar 
             activeModule={activeModule} 
             setActiveModule={setActiveModule}
-            userRole={user.role}
-            userPermissions={user.permissions}
           />
           
           <main className="flex-1 overflow-hidden">
@@ -224,7 +222,7 @@ const EnhancedIndex = () => {
                   </Button>
                   
                   <Button variant="outline" size="sm" onClick={() => setActiveModule('settings')}>
-                    <Settings className="w-4 h-4 mr-2" />
+                    <SettingsIcon className="w-4 h-4 mr-2" />
                     Settings
                   </Button>
                   
