@@ -1,3 +1,4 @@
+
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -6,7 +7,8 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { EnhancedAuthProvider } from "@/contexts/EnhancedAuthContext";
 import Index from "./pages/Index";
 import Home from "./pages/Home";
-import Auth from "./pages/Auth";
+// Removed legacy Auth import to avoid unused import and ensure ModernAuth is used for /auth
+// import Auth from "./pages/Auth";
 import About from "./pages/About";
 import Contact from "./pages/Contact";
 import Help from "./pages/Help";
@@ -29,7 +31,8 @@ const App = () => (
             <Route path="/" element={<Home />} />
             <Route path="/home" element={<Home />} />
             <Route path="/dashboard" element={<EnhancedIndex />} />
-            <Route path="/auth" element={<Auth />} />
+            {/* Route /auth to ModernAuth to ensure it uses EnhancedAuthContext */}
+            <Route path="/auth" element={<ModernAuth />} />
             <Route path="/login" element={<ModernAuth />} />
             <Route path="/about" element={<About />} />
             <Route path="/contact" element={<Contact />} />
