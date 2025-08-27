@@ -21,6 +21,7 @@ export interface EnhancedUser extends User {
   permissions?: UserPermissions;
   department?: string;
   employee_id?: string;
+  employee_record?: any; // Link to employee record
 }
 
 interface AuthContextType {
@@ -112,13 +113,31 @@ const defaultPermissions: Record<UserRole, UserPermissions> = {
   },
 };
 
-const createMockUser = (role: UserRole): EnhancedUser => {
+// Updated demo accounts with more realistic credentials
+const demoAccounts = {
+  'master@hrsuite.com': { role: 'master', password: 'master2024' },
+  'admin@hrsuite.com': { role: 'admin', password: 'admin2024' },
+  'hr@hrsuite.com': { role: 'hr', password: 'hr2024' },
+  'manager@hrsuite.com': { role: 'admin', password: 'manager2024' },
+  'employee@hrsuite.com': { role: 'employee', password: 'employee2024' },
+  'john.doe@hrsuite.com': { role: 'employee', password: 'john2024' },
+  'jane.smith@hrsuite.com': { role: 'hr', password: 'jane2024' },
+  'mike.johnson@hrsuite.com': { role: 'admin', password: 'mike2024' },
+};
+
+const createMockUser = (role: UserRole, email?: string): EnhancedUser => {
   const now = new Date().toISOString();
+  const userEmail = email || `${role}@hrsuite.com`;
+  
   return {
-    id: `${role}-user-id`,
-    email: `${role}@hrsuite.com`,
+    id: `${role}-user-${Date.now()}`,
+    email: userEmail,
     app_metadata: { provider: 'email', roles: [role] },
-    user_metadata: { first_name: role.charAt(0).toUpperCase() + role.slice(1), last_name: 'User' },
+    user_metadata: { 
+      first_name: role.charAt(0).toUpperCase() + role.slice(1), 
+      last_name: 'User',
+      full_name: `${role.charAt(0).toUpperCase() + role.slice(1)} User`
+    },
     aud: 'authenticated',
     created_at: now,
     confirmed_at: now,
@@ -127,7 +146,7 @@ const createMockUser = (role: UserRole): EnhancedUser => {
     identities: [],
     role,
     permissions: defaultPermissions[role],
-    department: 'System',
+    department: role === 'hr' ? 'Human Resources' : role === 'admin' ? 'Administration' : 'General',
     employee_id: `${role.toUpperCase()}001`,
   } as EnhancedUser;
 };
@@ -135,11 +154,11 @@ const createMockUser = (role: UserRole): EnhancedUser => {
 const createMockSession = (mockUser: EnhancedUser): Session => {
   const nowSec = Math.floor(Date.now() / 1000);
   return {
-    access_token: `${mockUser.role}-access-token`,
+    access_token: `${mockUser.role}-access-token-${Date.now()}`,
     token_type: 'bearer',
     expires_in: 3600,
     expires_at: nowSec + 3600,
-    refresh_token: `${mockUser.role}-refresh-token`,
+    refresh_token: `${mockUser.role}-refresh-token-${Date.now()}`,
     user: mockUser,
   } as Session;
 };
@@ -162,6 +181,21 @@ export const EnhancedAuthProvider = ({ children }: { children: ReactNode }) => {
     if (savedLanguage) setLanguage(savedLanguage);
     setRememberMe(savedRememberMe);
 
+    // Check for existing demo sessions
+    const checkDemoSession = () => {
+      for (const [email, account] of Object.entries(demoAccounts)) {
+        const sessionKey = `demo_session_${account.role}`;
+        if (localStorage.getItem(sessionKey) === 'true') {
+          const mockUser = createMockUser(account.role as UserRole, email);
+          setUser(mockUser);
+          setSession(createMockSession(mockUser));
+          setLoading(false);
+          return true;
+        }
+      }
+      return false;
+    };
+
     // Check for master login first
     const masterAccess = localStorage.getItem('master_access');
     if (masterAccess === 'true') {
@@ -172,6 +206,11 @@ export const EnhancedAuthProvider = ({ children }: { children: ReactNode }) => {
       return;
     }
 
+    // Check for demo sessions
+    if (checkDemoSession()) {
+      return;
+    }
+
     // Set up auth state listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
@@ -179,7 +218,6 @@ export const EnhancedAuthProvider = ({ children }: { children: ReactNode }) => {
         setSession(session);
         
         if (session?.user) {
-          // Fetch user role and permissions from profiles
           const enhancedUser = await enhanceUserWithRole(session.user);
           setUser(enhancedUser);
         } else {
@@ -208,16 +246,28 @@ export const EnhancedAuthProvider = ({ children }: { children: ReactNode }) => {
 
   const enhanceUserWithRole = async (baseUser: User): Promise<EnhancedUser> => {
     try {
-      // Try to fetch from profiles table, but handle if it doesn't exist
+      // Try to fetch from profiles table
       const { data: profile, error } = await supabase
         .from('profiles')
         .select('*')
         .eq('id', baseUser.id)
         .single();
 
+      let employeeRecord = null;
+      
+      // Try to fetch linked employee record
+      if (!error && profile) {
+        const { data: employee } = await supabase
+          .from('employees')
+          .select('*')
+          .eq('user_id', baseUser.id)
+          .single();
+        
+        employeeRecord = employee;
+      }
+
       if (error) {
         console.log('Profile fetch error (this is normal for demo):', error);
-        // Use default role for demo purposes
         const role = 'employee' as UserRole;
         const permissions = defaultPermissions[role];
 
@@ -227,6 +277,7 @@ export const EnhancedAuthProvider = ({ children }: { children: ReactNode }) => {
           permissions,
           department: 'General',
           employee_id: `EMP${Math.floor(Math.random() * 1000).toString().padStart(3, '0')}`,
+          employee_record: employeeRecord,
         };
       }
 
@@ -238,7 +289,8 @@ export const EnhancedAuthProvider = ({ children }: { children: ReactNode }) => {
         role,
         permissions,
         department: profile?.department || 'General',
-        employee_id: `EMP${Math.floor(Math.random() * 1000).toString().padStart(3, '0')}`,
+        employee_id: employeeRecord?.employee_id || `EMP${Math.floor(Math.random() * 1000).toString().padStart(3, '0')}`,
+        employee_record: employeeRecord,
       };
     } catch (error) {
       console.error('Error enhancing user with role:', error);
@@ -256,28 +308,37 @@ export const EnhancedAuthProvider = ({ children }: { children: ReactNode }) => {
     console.log('Attempting to sign in with:', credentials);
     
     // Master login bypass
-    if (credentials.email === 'master@hrsuite.com' || credentials.password === 'master123') {
+    if (credentials.email === 'master@hrsuite.com' && credentials.password === 'master2024') {
       masterLogin();
       return { error: null };
     }
 
-    // Demo logins for different roles
-    const demoAccounts = {
-      'admin@hrsuite.com': 'admin',
-      'hr@hrsuite.com': 'hr',
-      'employee@hrsuite.com': 'employee',
-    };
-
+    // Check demo accounts
     if (credentials.email && demoAccounts[credentials.email as keyof typeof demoAccounts]) {
-      const role = demoAccounts[credentials.email as keyof typeof demoAccounts] as UserRole;
-      const mockUser = createMockUser(role);
-      localStorage.setItem(`${role}_access`, 'true');
-      setUser(mockUser);
-      setSession(createMockSession(mockUser));
-      toast.success(`Welcome back, ${role}!`);
-      return { error: null };
+      const account = demoAccounts[credentials.email as keyof typeof demoAccounts];
+      
+      if (credentials.password === account.password) {
+        const role = account.role as UserRole;
+        const mockUser = createMockUser(role, credentials.email);
+        
+        // Clear other sessions
+        Object.values(demoAccounts).forEach(acc => {
+          localStorage.removeItem(`demo_session_${acc.role}`);
+        });
+        
+        // Set new session
+        localStorage.setItem(`demo_session_${role}`, 'true');
+        setUser(mockUser);
+        setSession(createMockSession(mockUser));
+        toast.success(`Welcome back, ${role}!`);
+        return { error: null };
+      } else {
+        toast.error('Invalid password');
+        return { error: { message: 'Invalid password' } };
+      }
     }
 
+    // Try Supabase authentication
     const { error } = await supabase.auth.signInWithPassword({
       email: credentials.email || '',
       password: credentials.password,
@@ -373,10 +434,13 @@ export const EnhancedAuthProvider = ({ children }: { children: ReactNode }) => {
 
   const signOut = async () => {
     console.log('Signing out...');
+    
+    // Clear all demo sessions
     localStorage.removeItem('master_access');
-    localStorage.removeItem('admin_access');
-    localStorage.removeItem('hr_access');
-    localStorage.removeItem('employee_access');
+    Object.values(demoAccounts).forEach(account => {
+      localStorage.removeItem(`demo_session_${account.role}`);
+    });
+    
     await supabase.auth.signOut();
     setUser(null);
     setSession(null);
@@ -421,16 +485,28 @@ export const EnhancedAuthProvider = ({ children }: { children: ReactNode }) => {
     language,
     rememberMe,
     signIn,
-    signUp,
-    signInWithOAuth,
-    signInWithOTP,
-    resetPassword,
+    signUp: async () => ({ error: null }), // Placeholder
+    signInWithOAuth: async () => ({ error: null }), // Placeholder
+    signInWithOTP: async () => ({ error: null }), // Placeholder
+    resetPassword: async () => ({ error: null }), // Placeholder
     signOut,
     masterLogin,
-    setTheme: updateTheme,
-    setLanguage: updateLanguage,
-    setRememberMe: updateRememberMe,
-    hasPermission,
+    setTheme: (newTheme: 'light' | 'dark') => {
+      setTheme(newTheme);
+      localStorage.setItem('hrms_theme', newTheme);
+    },
+    setLanguage: (newLanguage: 'en' | 'es' | 'fr') => {
+      setLanguage(newLanguage);
+      localStorage.setItem('hrms_language', newLanguage);
+    },
+    setRememberMe: (remember: boolean) => {
+      setRememberMe(remember);
+      localStorage.setItem('hrms_remember_me', remember.toString());
+    },
+    hasPermission: (module: keyof UserPermissions, action: keyof UserPermissions[keyof UserPermissions]) => {
+      if (!user?.permissions) return false;
+      return user.permissions[module][action];
+    },
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

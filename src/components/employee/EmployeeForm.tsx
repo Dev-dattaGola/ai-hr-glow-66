@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -6,8 +5,9 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { useCreateEmployee, useUpdateEmployee, type Employee } from "@/hooks/useEmployees";
-import { X } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { useCreateEmployee, useUpdateEmployee, useAvailableUsers, type Employee } from "@/hooks/useEmployees";
+import { X, User, Link } from "lucide-react";
 
 interface EmployeeFormProps {
   employee?: Employee | null;
@@ -29,11 +29,13 @@ const EmployeeForm = ({ employee, onClose }: EmployeeFormProps) => {
     address: '',
     emergency_contact: '',
     emergency_phone: '',
-    avatar_url: ''
+    avatar_url: '',
+    user_id: '' // New field for user assignment
   });
 
   const createEmployee = useCreateEmployee();
   const updateEmployee = useUpdateEmployee();
+  const { data: availableUsers = [], isLoading: usersLoading } = useAvailableUsers();
 
   useEffect(() => {
     if (employee) {
@@ -51,7 +53,8 @@ const EmployeeForm = ({ employee, onClose }: EmployeeFormProps) => {
         address: employee.address || '',
         emergency_contact: employee.emergency_contact || '',
         emergency_phone: employee.emergency_phone || '',
-        avatar_url: employee.avatar_url || ''
+        avatar_url: employee.avatar_url || '',
+        user_id: employee.user_id || ''
       });
     }
   }, [employee]);
@@ -61,7 +64,8 @@ const EmployeeForm = ({ employee, onClose }: EmployeeFormProps) => {
     
     const employeeData = {
       ...formData,
-      salary: formData.salary ? parseFloat(formData.salary) : undefined
+      salary: formData.salary ? parseFloat(formData.salary) : undefined,
+      user_id: formData.user_id || undefined
     };
 
     if (employee) {
@@ -81,6 +85,15 @@ const EmployeeForm = ({ employee, onClose }: EmployeeFormProps) => {
       [e.target.name]: e.target.value
     }));
   };
+
+  const handleSelectChange = (name: string, value: string) => {
+    setFormData(prev => ({
+      ...prev,
+      [name]: value
+    }));
+  };
+
+  const selectedUser = availableUsers.find(user => user.id === formData.user_id);
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
@@ -111,6 +124,47 @@ const EmployeeForm = ({ employee, onClose }: EmployeeFormProps) => {
                   onChange={handleChange}
                   placeholder="https://example.com/avatar.jpg"
                 />
+              </div>
+            </div>
+
+            {/* User Account Assignment Section */}
+            <div className="bg-blue-50 p-4 rounded-lg border border-blue-200 mb-6">
+              <div className="flex items-center space-x-2 mb-3">
+                <Link className="w-5 h-5 text-blue-600" />
+                <Label className="text-blue-800 font-medium">Link User Account</Label>
+              </div>
+              <p className="text-sm text-blue-700 mb-3">
+                Assign this employee to an existing user account for login access and data synchronization.
+              </p>
+              
+              <div className="space-y-3">
+                <Label htmlFor="user_id">Select User Account (Optional)</Label>
+                <Select 
+                  value={formData.user_id} 
+                  onValueChange={(value) => handleSelectChange('user_id', value)}
+                  disabled={usersLoading}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder={usersLoading ? "Loading users..." : "Select a user account"} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="">No user assignment</SelectItem>
+                    {availableUsers.map((user) => (
+                      <SelectItem key={user.id} value={user.id}>
+                        <div className="flex items-center space-x-2">
+                          <User className="w-4 h-4" />
+                          <span>{user.first_name} {user.last_name} ({user.email})</span>
+                        </div>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                
+                {selectedUser && (
+                  <div className="p-2 bg-green-50 border border-green-200 rounded text-sm text-green-700">
+                    ✓ This employee will be linked to: {selectedUser.first_name} {selectedUser.last_name} ({selectedUser.email})
+                  </div>
+                )}
               </div>
             </div>
 

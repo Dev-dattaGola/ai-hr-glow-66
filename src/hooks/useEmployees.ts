@@ -1,4 +1,3 @@
-
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -23,6 +22,7 @@ export interface Employee {
   created_at: string;
   updated_at: string;
   created_by?: string;
+  user_id?: string; // New field for linking to auth users
 }
 
 export const useEmployees = () => {
@@ -52,10 +52,31 @@ export const useCreateEmployee = () => {
         .single();
       
       if (error) throw error;
+      
+      // If user_id is provided, also create/update the profile
+      if (employeeData.user_id) {
+        const { error: profileError } = await supabase
+          .from('profiles')
+          .upsert({
+            id: employeeData.user_id,
+            email: employeeData.email,
+            first_name: employeeData.first_name,
+            last_name: employeeData.last_name,
+            department: employeeData.department,
+            position: employeeData.position,
+            role: 'employee' // Default role
+          });
+        
+        if (profileError) {
+          console.warn('Profile update failed:', profileError);
+        }
+      }
+      
       return data;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['employees'] });
+      queryClient.invalidateQueries({ queryKey: ['users'] });
       toast.success('Employee created successfully');
     },
     onError: (error) => {
@@ -77,10 +98,30 @@ export const useUpdateEmployee = () => {
         .single();
       
       if (error) throw error;
+      
+      // If user_id is provided, also update the profile
+      if (updateData.user_id) {
+        const { error: profileError } = await supabase
+          .from('profiles')
+          .upsert({
+            id: updateData.user_id,
+            email: updateData.email,
+            first_name: updateData.first_name,
+            last_name: updateData.last_name,
+            department: updateData.department,
+            position: updateData.position
+          });
+        
+        if (profileError) {
+          console.warn('Profile update failed:', profileError);
+        }
+      }
+      
       return data;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['employees'] });
+      queryClient.invalidateQueries({ queryKey: ['users'] });
       toast.success('Employee updated successfully');
     },
     onError: (error) => {
@@ -107,6 +148,34 @@ export const useDeleteEmployee = () => {
     },
     onError: (error) => {
       toast.error(`Failed to delete employee: ${error.message}`);
+    },
+  });
+};
+
+// New hook to fetch available users for assignment
+export const useAvailableUsers = () => {
+  return useQuery({
+    queryKey: ['available-users'],
+    queryFn: async () => {
+      // First get all auth users from profiles
+      const { data: profiles, error: profilesError } = await supabase
+        .from('profiles')
+        .select('id, email, first_name, last_name');
+      
+      if (profilesError) throw profilesError;
+      
+      // Then get all assigned user IDs from employees
+      const { data: employees, error: employeesError } = await supabase
+        .from('employees')
+        .select('user_id')
+        .not('user_id', 'is', null);
+      
+      if (employeesError) throw employeesError;
+      
+      const assignedUserIds = employees.map(emp => emp.user_id).filter(Boolean);
+      
+      // Return users that are not yet assigned to employees
+      return profiles?.filter(profile => !assignedUserIds.includes(profile.id)) || [];
     },
   });
 };
