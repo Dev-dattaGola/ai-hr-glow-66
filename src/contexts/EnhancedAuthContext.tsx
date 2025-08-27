@@ -1,3 +1,4 @@
+
 import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
@@ -21,7 +22,7 @@ export interface EnhancedUser extends User {
   permissions?: UserPermissions;
   department?: string;
   employee_id?: string;
-  employee_record?: any; // Link to employee record
+  employee_record?: any;
 }
 
 interface AuthContextType {
@@ -115,19 +116,19 @@ const defaultPermissions: Record<UserRole, UserPermissions> = {
 
 // Updated demo accounts with more realistic credentials
 const demoAccounts = {
-  'master@hrsuite.com': { role: 'master', password: 'master2024' },
-  'admin@hrsuite.com': { role: 'admin', password: 'admin2024' },
-  'hr@hrsuite.com': { role: 'hr', password: 'hr2024' },
-  'manager@hrsuite.com': { role: 'admin', password: 'manager2024' },
-  'employee@hrsuite.com': { role: 'employee', password: 'employee2024' },
-  'john.doe@hrsuite.com': { role: 'employee', password: 'john2024' },
-  'jane.smith@hrsuite.com': { role: 'hr', password: 'jane2024' },
-  'mike.johnson@hrsuite.com': { role: 'admin', password: 'mike2024' },
+  'master@company.com': { role: 'master', password: 'Master123!' },
+  'admin@company.com': { role: 'admin', password: 'Admin123!' },
+  'hr@company.com': { role: 'hr', password: 'HR123!' },
+  'manager@company.com': { role: 'admin', password: 'Manager123!' },
+  'employee@company.com': { role: 'employee', password: 'Employee123!' },
+  'john.doe@company.com': { role: 'employee', password: 'John123!' },
+  'jane.smith@company.com': { role: 'hr', password: 'Jane123!' },
+  'mike.johnson@company.com': { role: 'admin', password: 'Mike123!' },
 };
 
 const createMockUser = (role: UserRole, email?: string): EnhancedUser => {
   const now = new Date().toISOString();
-  const userEmail = email || `${role}@hrsuite.com`;
+  const userEmail = email || `${role}@company.com`;
   
   return {
     id: `${role}-user-${Date.now()}`,
@@ -308,7 +309,7 @@ export const EnhancedAuthProvider = ({ children }: { children: ReactNode }) => {
     console.log('Attempting to sign in with:', credentials);
     
     // Master login bypass
-    if (credentials.email === 'master@hrsuite.com' && credentials.password === 'master2024') {
+    if (credentials.email === 'master@company.com' && credentials.password === 'Master123!') {
       masterLogin();
       return { error: null };
     }
@@ -485,28 +486,16 @@ export const EnhancedAuthProvider = ({ children }: { children: ReactNode }) => {
     language,
     rememberMe,
     signIn,
-    signUp: async () => ({ error: null }), // Placeholder
-    signInWithOAuth: async () => ({ error: null }), // Placeholder
-    signInWithOTP: async () => ({ error: null }), // Placeholder
-    resetPassword: async () => ({ error: null }), // Placeholder
+    signUp,
+    signInWithOAuth,
+    signInWithOTP,
+    resetPassword,
     signOut,
     masterLogin,
-    setTheme: (newTheme: 'light' | 'dark') => {
-      setTheme(newTheme);
-      localStorage.setItem('hrms_theme', newTheme);
-    },
-    setLanguage: (newLanguage: 'en' | 'es' | 'fr') => {
-      setLanguage(newLanguage);
-      localStorage.setItem('hrms_language', newLanguage);
-    },
-    setRememberMe: (remember: boolean) => {
-      setRememberMe(remember);
-      localStorage.setItem('hrms_remember_me', remember.toString());
-    },
-    hasPermission: (module: keyof UserPermissions, action: keyof UserPermissions[keyof UserPermissions]) => {
-      if (!user?.permissions) return false;
-      return user.permissions[module][action];
-    },
+    setTheme: updateTheme,
+    setLanguage: updateLanguage,
+    setRememberMe: updateRememberMe,
+    hasPermission,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

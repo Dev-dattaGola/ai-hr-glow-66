@@ -1,3 +1,4 @@
+
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -22,7 +23,7 @@ export interface Employee {
   created_at: string;
   updated_at: string;
   created_by?: string;
-  user_id?: string; // New field for linking to auth users
+  user_id?: string;
 }
 
 export const useEmployees = () => {
@@ -64,7 +65,7 @@ export const useCreateEmployee = () => {
             last_name: employeeData.last_name,
             department: employeeData.department,
             position: employeeData.position,
-            role: 'employee' // Default role
+            role: 'employee'
           });
         
         if (profileError) {
@@ -76,7 +77,7 @@ export const useCreateEmployee = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['employees'] });
-      queryClient.invalidateQueries({ queryKey: ['users'] });
+      queryClient.invalidateQueries({ queryKey: ['available-users'] });
       toast.success('Employee created successfully');
     },
     onError: (error) => {
@@ -121,7 +122,7 @@ export const useUpdateEmployee = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['employees'] });
-      queryClient.invalidateQueries({ queryKey: ['users'] });
+      queryClient.invalidateQueries({ queryKey: ['available-users'] });
       toast.success('Employee updated successfully');
     },
     onError: (error) => {
@@ -144,6 +145,7 @@ export const useDeleteEmployee = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['employees'] });
+      queryClient.invalidateQueries({ queryKey: ['available-users'] });
       toast.success('Employee deleted successfully');
     },
     onError: (error) => {
@@ -172,7 +174,7 @@ export const useAvailableUsers = () => {
       
       if (employeesError) throw employeesError;
       
-      const assignedUserIds = employees.map(emp => emp.user_id).filter(Boolean);
+      const assignedUserIds = employees?.map(emp => emp.user_id).filter(Boolean) || [];
       
       // Return users that are not yet assigned to employees
       return profiles?.filter(profile => !assignedUserIds.includes(profile.id)) || [];
