@@ -1,7 +1,8 @@
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { getStorageData, addToStorage, updateInStorage } from '@/lib/localStorage';
+import { initializeMockData } from '@/lib/mockData';
 
 export interface Expense {
   id: string;
@@ -24,16 +25,15 @@ export const useExpenses = () => {
   return useQuery({
     queryKey: ['expenses'],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from('expenses')
-        .select(`
-          *,
-          employees!expenses_employee_id_fkey(first_name, last_name, employee_id)
-        `)
-        .order('created_at', { ascending: false });
+      initializeMockData();
+      const expenses = getStorageData<Expense>('expenses');
+      const employees = getStorageData<any>('employees');
       
-      if (error) throw error;
-      return data;
+      // Simulate joining with employee data
+      return expenses.map(expense => ({
+        ...expense,
+        employees: employees.find(emp => emp.id === expense.employee_id) || null
+      }));
     },
   });
 };
@@ -43,14 +43,11 @@ export const useCreateExpense = () => {
   
   return useMutation({
     mutationFn: async (expenseData: Omit<Expense, 'id' | 'created_at' | 'updated_at' | 'status'>) => {
-      const { data, error } = await supabase
-        .from('expenses')
-        .insert([expenseData])
-        .select()
-        .single();
-      
-      if (error) throw error;
-      return data;
+      const newExpense = addToStorage<Expense>('expenses', {
+        ...expenseData,
+        status: 'pending' as const
+      });
+      return newExpense;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['expenses'] });
@@ -67,15 +64,9 @@ export const useUpdateExpense = () => {
   
   return useMutation({
     mutationFn: async ({ id, ...updateData }: Partial<Expense> & { id: string }) => {
-      const { data, error } = await supabase
-        .from('expenses')
-        .update(updateData)
-        .eq('id', id)
-        .select()
-        .single();
-      
-      if (error) throw error;
-      return data;
+      const updatedExpense = updateInStorage<Expense>('expenses', id, updateData);
+      if (!updatedExpense) throw new Error('Expense not found');
+      return updatedExpense;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['expenses'] });

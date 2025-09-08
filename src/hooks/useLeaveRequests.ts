@@ -1,7 +1,8 @@
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { getStorageData, addToStorage, updateInStorage } from '@/lib/localStorage';
+import { initializeMockData } from '@/lib/mockData';
 
 export interface LeaveRequest {
   id: string;
@@ -23,16 +24,15 @@ export const useLeaveRequests = () => {
   return useQuery({
     queryKey: ['leave-requests'],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from('leave_requests')
-        .select(`
-          *,
-          employees!leave_requests_employee_id_fkey(first_name, last_name, employee_id)
-        `)
-        .order('created_at', { ascending: false });
+      initializeMockData();
+      const leaveRequests = getStorageData<LeaveRequest>('leave_requests');
+      const employees = getStorageData<any>('employees');
       
-      if (error) throw error;
-      return data;
+      // Simulate joining with employee data
+      return leaveRequests.map(request => ({
+        ...request,
+        employees: employees.find(emp => emp.id === request.employee_id) || null
+      }));
     },
   });
 };
@@ -42,14 +42,11 @@ export const useCreateLeaveRequest = () => {
   
   return useMutation({
     mutationFn: async (leaveData: Omit<LeaveRequest, 'id' | 'created_at' | 'updated_at' | 'status'>) => {
-      const { data, error } = await supabase
-        .from('leave_requests')
-        .insert([leaveData])
-        .select()
-        .single();
-      
-      if (error) throw error;
-      return data;
+      const newLeaveRequest = addToStorage<LeaveRequest>('leave_requests', {
+        ...leaveData,
+        status: 'pending' as const
+      });
+      return newLeaveRequest;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['leave-requests'] });
@@ -66,15 +63,9 @@ export const useUpdateLeaveRequest = () => {
   
   return useMutation({
     mutationFn: async ({ id, ...updateData }: Partial<LeaveRequest> & { id: string }) => {
-      const { data, error } = await supabase
-        .from('leave_requests')
-        .update(updateData)
-        .eq('id', id)
-        .select()
-        .single();
-      
-      if (error) throw error;
-      return data;
+      const updatedRequest = updateInStorage<LeaveRequest>('leave_requests', id, updateData);
+      if (!updatedRequest) throw new Error('Leave request not found');
+      return updatedRequest;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['leave-requests'] });

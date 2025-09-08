@@ -1,7 +1,8 @@
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { getStorageData, addToStorage } from '@/lib/localStorage';
+import { initializeMockData } from '@/lib/mockData';
 
 export interface Announcement {
   id: string;
@@ -18,13 +19,8 @@ export const useAnnouncements = () => {
   return useQuery({
     queryKey: ['announcements'],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from('announcements')
-        .select('*')
-        .order('created_at', { ascending: false });
-      
-      if (error) throw error;
-      return data as Announcement[];
+      initializeMockData();
+      return getStorageData<Announcement>('announcements');
     },
   });
 };
@@ -34,14 +30,8 @@ export const useCreateAnnouncement = () => {
   
   return useMutation({
     mutationFn: async (announcementData: Omit<Announcement, 'id' | 'created_at' | 'updated_at'>) => {
-      const { data, error } = await supabase
-        .from('announcements')
-        .insert([announcementData])
-        .select()
-        .single();
-      
-      if (error) throw error;
-      return data;
+      const newAnnouncement = addToStorage<Announcement>('announcements', announcementData);
+      return newAnnouncement;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['announcements'] });

@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '@/contexts/EnhancedAuthContext';
-import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -114,16 +113,8 @@ const ModernAuth = () => {
   const handleOAuthSignIn = async (provider: 'google' | 'github' | 'linkedin_oidc') => {
     setIsLoading(true);
     try {
-      const { error } = await supabase.auth.signInWithOAuth({
-        provider,
-        options: {
-          // Redirect back to the app; adjust if needed
-          redirectTo: `${window.location.origin}/dashboard`,
-        },
-      });
-      if (error) {
-        toast.error(`${provider} sign in failed: ${error.message}`);
-      }
+      // Frontend only - no OAuth available
+      toast.error('OAuth sign in is not available in demo mode. Please use demo accounts.');
     } catch {
       toast.error('OAuth sign in failed');
     } finally {
@@ -160,12 +151,8 @@ const ModernAuth = () => {
 
     setIsLoading(true);
     try {
-      const { error } = await supabase.auth.signInWithOtp({ phone: otpPhone });
-      if (error) {
-        toast.error(error.message);
-      } else {
-        toast.success('OTP sent to your phone!');
-      }
+      // Frontend only - no OTP available
+      toast.error('OTP sign in is not available in demo mode. Please use demo accounts.');
     } catch {
       toast.error('Failed to send OTP');
     } finally {

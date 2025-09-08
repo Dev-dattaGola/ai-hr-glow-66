@@ -1,7 +1,8 @@
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { getStorageData, addToStorage, updateInStorage, deleteFromStorage } from '@/lib/localStorage';
+import { initializeMockData } from '@/lib/mockData';
 
 export interface Employee {
   id: string;
@@ -30,13 +31,8 @@ export const useEmployees = () => {
   return useQuery({
     queryKey: ['employees'],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from('employees')
-        .select('*')
-        .order('created_at', { ascending: false });
-      
-      if (error) throw error;
-      return data as Employee[];
+      initializeMockData();
+      return getStorageData<Employee>('employees');
     },
   });
 };
@@ -46,34 +42,8 @@ export const useCreateEmployee = () => {
   
   return useMutation({
     mutationFn: async (employeeData: Omit<Employee, 'id' | 'created_at' | 'updated_at'>) => {
-      const { data, error } = await supabase
-        .from('employees')
-        .insert([employeeData])
-        .select()
-        .single();
-      
-      if (error) throw error;
-      
-      // If user_id is provided, also create/update the profile
-      if (employeeData.user_id) {
-        const { error: profileError } = await supabase
-          .from('profiles')
-          .upsert({
-            id: employeeData.user_id,
-            email: employeeData.email,
-            first_name: employeeData.first_name,
-            last_name: employeeData.last_name,
-            department: employeeData.department,
-            position: employeeData.position,
-            role: 'employee'
-          });
-        
-        if (profileError) {
-          console.warn('Profile update failed:', profileError);
-        }
-      }
-      
-      return data;
+      const newEmployee = addToStorage<Employee>('employees', employeeData);
+      return newEmployee;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['employees'] });
@@ -91,34 +61,9 @@ export const useUpdateEmployee = () => {
   
   return useMutation({
     mutationFn: async ({ id, ...updateData }: Partial<Employee> & { id: string }) => {
-      const { data, error } = await supabase
-        .from('employees')
-        .update(updateData)
-        .eq('id', id)
-        .select()
-        .single();
-      
-      if (error) throw error;
-      
-      // If user_id is provided, also update the profile
-      if (updateData.user_id) {
-        const { error: profileError } = await supabase
-          .from('profiles')
-          .upsert({
-            id: updateData.user_id,
-            email: updateData.email,
-            first_name: updateData.first_name,
-            last_name: updateData.last_name,
-            department: updateData.department,
-            position: updateData.position
-          });
-        
-        if (profileError) {
-          console.warn('Profile update failed:', profileError);
-        }
-      }
-      
-      return data;
+      const updatedEmployee = updateInStorage<Employee>('employees', id, updateData);
+      if (!updatedEmployee) throw new Error('Employee not found');
+      return updatedEmployee;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['employees'] });
@@ -136,12 +81,8 @@ export const useDeleteEmployee = () => {
   
   return useMutation({
     mutationFn: async (id: string) => {
-      const { error } = await supabase
-        .from('employees')
-        .delete()
-        .eq('id', id);
-      
-      if (error) throw error;
+      const success = deleteFromStorage<Employee>('employees', id);
+      if (!success) throw new Error('Employee not found');
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['employees'] });
@@ -159,25 +100,11 @@ export const useAvailableUsers = () => {
   return useQuery({
     queryKey: ['available-users'],
     queryFn: async () => {
-      // First get all auth users from profiles
-      const { data: profiles, error: profilesError } = await supabase
-        .from('profiles')
-        .select('id, email, first_name, last_name');
-      
-      if (profilesError) throw profilesError;
-      
-      // Then get all assigned user IDs from employees
-      const { data: employees, error: employeesError } = await supabase
-        .from('employees')
-        .select('user_id')
-        .not('user_id', 'is', null);
-      
-      if (employeesError) throw employeesError;
-      
-      const assignedUserIds = employees?.map(emp => emp.user_id).filter(Boolean) || [];
-      
-      // Return users that are not yet assigned to employees
-      return profiles?.filter(profile => !assignedUserIds.includes(profile.id)) || [];
+      // Return mock available users for demo
+      return [
+        { id: 'user-1', email: 'available1@company.com', first_name: 'Available', last_name: 'User1' },
+        { id: 'user-2', email: 'available2@company.com', first_name: 'Available', last_name: 'User2' }
+      ];
     },
   });
 };

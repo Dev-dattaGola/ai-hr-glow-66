@@ -1,7 +1,7 @@
 
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useAuth } from '@/contexts/AuthContext';
+import { useAuth } from '@/contexts/EnhancedAuthContext';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -14,7 +14,7 @@ const Auth = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  const { signIn, signUp, masterLogin } = useAuth();
+  const { signIn, signUp } = useAuth();
   const navigate = useNavigate();
 
   const [signInData, setSignInData] = useState({
@@ -31,13 +31,21 @@ const Auth = () => {
     department: '',
   });
 
-  const handleMasterLogin = () => {
-    masterLogin();
-    toast({
-      title: 'Master Access Granted!',
-      description: 'You now have full access to all portal features.',
+  const handleDemoLogin = () => {
+    // Use demo credentials for instant access
+    signIn('master@company.com', 'Master123!').then(() => {
+      toast({
+        title: 'Demo Access Granted!',
+        description: 'You now have full access to all portal features.',
+      });
+      navigate('/dashboard');
+    }).catch(() => {
+      toast({
+        title: 'Demo Login Failed',
+        description: 'Please try again.',
+        variant: 'destructive',
+      });
     });
-    navigate('/dashboard');
   };
 
   const handleSignIn = async (e: React.FormEvent) => {
@@ -45,25 +53,16 @@ const Auth = () => {
     setIsLoading(true);
 
     try {
-      const { error } = await signIn(signInData.email, signInData.password);
-
-      if (error) {
-        toast({
-          title: 'Sign In Failed',
-          description: error.message,
-          variant: 'destructive',
-        });
-      } else {
-        toast({
-          title: 'Welcome Back!',
-          description: 'You have successfully signed in.',
-        });
-        navigate('/dashboard');
-      }
-    } catch (error) {
+      await signIn(signInData.email, signInData.password);
       toast({
-        title: 'Error',
-        description: 'An unexpected error occurred. Please try again.',
+        title: 'Welcome Back!',
+        description: 'You have successfully signed in.',
+      });
+      navigate('/dashboard');
+    } catch (error: any) {
+      toast({
+        title: 'Sign In Failed',
+        description: error.message || 'Invalid credentials',
         variant: 'destructive',
       });
     } finally {
@@ -96,41 +95,33 @@ const Auth = () => {
     }
 
     try {
-      const { error } = await signUp(signUpData.email, signUpData.password, {
+      await signUp(signUpData.email, signUpData.password, {
         first_name: signUpData.firstName,
         last_name: signUpData.lastName,
         department: signUpData.department,
       });
-
-      if (error) {
-        if (error.message.includes('already registered')) {
-          toast({
-            title: 'Account Already Exists',
-            description: 'An account with this email already exists. Please sign in instead.',
-            variant: 'destructive',
-          });
-        } else {
-          toast({
-            title: 'Sign Up Failed',
-            description: error.message,
-            variant: 'destructive',
-          });
-        }
+      toast({
+        title: 'Account Created!',
+        description: 'Please check your email to verify your account.',
+      });
+    } catch (error: any) {
+      if (error.message && error.message.includes('already registered')) {
+        toast({
+          title: 'Account Already Exists',
+          description: 'An account with this email already exists. Please sign in instead.',
+          variant: 'destructive',
+        });
       } else {
         toast({
-          title: 'Account Created!',
-          description: 'Please check your email to verify your account.',
+          title: 'Sign Up Failed',
+          description: error.message || 'Failed to create account',
+          variant: 'destructive',
         });
       }
-    } catch (error) {
-      toast({
-        title: 'Error',
-        description: 'An unexpected error occurred. Please try again.',
-        variant: 'destructive',
-      });
     } finally {
       setIsLoading(false);
     }
+  };
   };
 
   return (
@@ -193,12 +184,12 @@ const Auth = () => {
             {/* Master Login Button */}
             <div className="mb-6">
               <Button
-                onClick={handleMasterLogin}
+                onClick={handleDemoLogin}
                 className="w-full bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white"
                 size="lg"
               >
                 <Shield className="w-4 h-4 mr-2" />
-                Master Login - Full Portal Access
+                Demo Login - Full Portal Access
               </Button>
               <p className="text-xs text-gray-500 text-center mt-2">
                 Click for instant access to all portal features

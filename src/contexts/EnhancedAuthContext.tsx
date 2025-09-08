@@ -1,10 +1,8 @@
 import { createContext, useContext, useEffect, useState } from 'react';
-import { supabase } from '@/integrations/supabase/client';
-import { User } from '@supabase/supabase-js';
 import { toast } from 'sonner';
 
 interface AuthContextType {
-  user: User | null;
+  user: any | null;
   profile: any | null;
   loading: boolean;
   signIn: (email: string, password: string) => Promise<void>;
@@ -260,7 +258,7 @@ const DEMO_CREDENTIALS = {
 };
 
 export const EnhancedAuthProvider = ({ children }: { children: React.ReactNode }) => {
-  const [user, setUser] = useState<User | null>(null);
+  const [user, setUser] = useState<any | null>(null);
   const [profile, setProfile] = useState<any | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -275,50 +273,9 @@ export const EnhancedAuthProvider = ({ children }: { children: React.ReactNode }
       return;
     }
 
-    // Get initial session from Supabase
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setUser(session?.user ?? null);
-      if (session?.user) {
-        fetchProfile(session.user.id);
-      }
-      setLoading(false);
-    });
-
-    // Listen for auth changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-      // Clear demo session if real auth event occurs
-      localStorage.removeItem('demo_user');
-      
-      setUser(session?.user ?? null);
-      if (session?.user) {
-        await fetchProfile(session.user.id);
-      } else {
-        setProfile(null);
-      }
-      setLoading(false);
-    });
-
-    return () => subscription.unsubscribe();
+    // No real auth system - just complete loading
+    setLoading(false);
   }, []);
-
-  const fetchProfile = async (userId: string) => {
-    try {
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', userId)
-        .single();
-
-      if (error && error.code !== 'PGRST116') {
-        console.error('Error fetching profile:', error);
-        return;
-      }
-
-      setProfile(data);
-    } catch (error) {
-      console.error('Error fetching profile:', error);
-    }
-  };
 
   const signIn = async (email: string, password: string) => {
     setLoading(true);
@@ -358,15 +315,9 @@ export const EnhancedAuthProvider = ({ children }: { children: React.ReactNode }
         return;
       }
 
-      // Try real Supabase authentication
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email,
-        password,
-      });
-
-      if (error) throw error;
-      
-      toast.success('Successfully signed in!');
+      // No real auth system - just show error for non-demo accounts
+      toast.error('Invalid credentials. Please use demo accounts.');
+      throw new Error('Invalid credentials. Please use demo accounts.');
     } catch (error: any) {
       console.error('Sign in error:', error);
       toast.error(error.message || 'Invalid credentials. Try using demo accounts.');
@@ -379,18 +330,8 @@ export const EnhancedAuthProvider = ({ children }: { children: React.ReactNode }
   const signUp = async (email: string, password: string, userData?: any) => {
     setLoading(true);
     try {
-      const { data, error } = await supabase.auth.signUp({
-        email,
-        password,
-        options: {
-          data: userData,
-          emailRedirectTo: `${window.location.origin}/`
-        }
-      });
-
-      if (error) throw error;
-      
-      toast.success('Account created successfully! Please check your email to verify your account.');
+      // Frontend only - no real signup
+      toast.success('Demo mode: Account creation disabled. Please use demo accounts.');
     } catch (error: any) {
       console.error('Sign up error:', error);
       toast.error(error.message || 'Failed to create account');
@@ -406,10 +347,6 @@ export const EnhancedAuthProvider = ({ children }: { children: React.ReactNode }
       // Clear demo session
       localStorage.removeItem('demo_user');
       
-      // Sign out from Supabase if real session exists
-      const { error } = await supabase.auth.signOut();
-      if (error) throw error;
-      
       setUser(null);
       setProfile(null);
       toast.success('Successfully signed out!');
@@ -424,12 +361,8 @@ export const EnhancedAuthProvider = ({ children }: { children: React.ReactNode }
 
   const resetPassword = async (email: string) => {
     try {
-      const { error } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: `${window.location.origin}/`
-      });
-      if (error) throw error;
-      
-      toast.success('Password reset email sent!');
+      // Frontend only - no real password reset
+      toast.success('Demo mode: Password reset disabled. Please use demo accounts.');
     } catch (error: any) {
       console.error('Reset password error:', error);
       toast.error(error.message || 'Failed to send reset email');
@@ -441,14 +374,11 @@ export const EnhancedAuthProvider = ({ children }: { children: React.ReactNode }
     if (!user) return;
     
     try {
-      const { error } = await supabase
-        .from('profiles')
-        .update(updates)
-        .eq('id', user.id);
-
-      if (error) throw error;
-      
-      await fetchProfile(user.id);
+      // Frontend only - update local demo user data
+      const updatedUser = { ...user, ...updates };
+      localStorage.setItem('demo_user', JSON.stringify(updatedUser));
+      setUser(updatedUser);
+      setProfile(updatedUser);
       toast.success('Profile updated successfully!');
     } catch (error: any) {
       console.error('Update profile error:', error);

@@ -1,7 +1,8 @@
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { getStorageData, addToStorage, updateInStorage } from '@/lib/localStorage';
+import { initializeMockData } from '@/lib/mockData';
 
 export interface AttendanceRecord {
   id: string;
@@ -22,22 +23,19 @@ export const useAttendance = (employeeId?: string) => {
   return useQuery({
     queryKey: ['attendance', employeeId],
     queryFn: async () => {
-      let query = supabase
-        .from('attendance')
-        .select(`
-          *,
-          employees!attendance_employee_id_fkey(first_name, last_name, employee_id)
-        `)
-        .order('date', { ascending: false });
-
+      initializeMockData();
+      let attendance = getStorageData<AttendanceRecord>('attendance');
+      const employees = getStorageData<any>('employees');
+      
       if (employeeId) {
-        query = query.eq('employee_id', employeeId);
+        attendance = attendance.filter(record => record.employee_id === employeeId);
       }
       
-      const { data, error } = await query;
-      
-      if (error) throw error;
-      return data;
+      // Simulate joining with employee data
+      return attendance.map(record => ({
+        ...record,
+        employees: employees.find(emp => emp.id === record.employee_id) || null
+      }));
     },
   });
 };
@@ -47,14 +45,8 @@ export const useCreateAttendance = () => {
   
   return useMutation({
     mutationFn: async (attendanceData: Omit<AttendanceRecord, 'id' | 'created_at' | 'updated_at'>) => {
-      const { data, error } = await supabase
-        .from('attendance')
-        .insert([attendanceData])
-        .select()
-        .single();
-      
-      if (error) throw error;
-      return data;
+      const newAttendance = addToStorage<AttendanceRecord>('attendance', attendanceData);
+      return newAttendance;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['attendance'] });
@@ -71,15 +63,9 @@ export const useUpdateAttendance = () => {
   
   return useMutation({
     mutationFn: async ({ id, ...updateData }: Partial<AttendanceRecord> & { id: string }) => {
-      const { data, error } = await supabase
-        .from('attendance')
-        .update(updateData)
-        .eq('id', id)
-        .select()
-        .single();
-      
-      if (error) throw error;
-      return data;
+      const updatedAttendance = updateInStorage<AttendanceRecord>('attendance', id, updateData);
+      if (!updatedAttendance) throw new Error('Attendance record not found');
+      return updatedAttendance;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['attendance'] });
